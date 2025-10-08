@@ -1,2 +1,3 @@
-# demo-device-data-monitor
-A device data monitoring &amp; analysis system demo built with Claude Code and Codex CLI.
+# DDMS
+
+A device data monitoring &amp; analysis system built with Claude Code and Codex CLI.
