@@ -1,0 +1,72 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    Learn what Codex proposed and see if anything to borrow and merge into the spec: # Stack Decisions
+
+    First-tier component selections (concise; no implementation details):
+
+    - Backend framework: FastAPI
+    - Database: PostgreSQL (consider TimescaleDB later if needed)
+    - ORM & migrations: SQLAlchemy 2.x + Alembic
+    - Authentication: JWT (HttpOnly cookies) + Argon2
+    - Realtime: WebSockets
+    - Frontend: React + TypeScript + Vite
+    - UI library: Ant Design
+    - Charting: ECharts
+    - Client data fetching/state: TanStack Query
+    - Internationalization: react-i18next
+    - Python package manager: uv
+    - Linting & types: Ruff + mypy
+    - Testing: pytest
+    - CI/CD: GitHub Actions
+    - Containerization: Docker Compose
+    - Configuration management: Pydantic Settings (.env)
+  timestamp: '2025-10-10T04:10:38Z'
+  log_uri: 'claude-code:50ade6fc-6b85-4259-bf27-04457a50f8b8.jsonl'
+- role: assistant
+  content: |
+    Comparing the two specs, here are the gaps to consider merging:
+
+    ## Missing from Current Spec (worth adding):
+
+    1. **SQLAlchemy 2.x + Alembic** - ORM and migrations (essential for database work)
+    2. **Argon2** vs Bcrypt - Argon2 is more modern/secure for password hashing
+    3. **Pydantic Settings** - Configuration management via .env files
+    4. **GitHub Actions** - CI/CD pipeline
+    5. **Vitest** already in your spec, but Codex doesn't mention **ESLint + Prettier** for frontend
+
+    ## Recommendations:
+
+    **Should add:**
+    - SQLAlchemy + Alembic (database abstraction layer needed)
+    - Pydantic Settings (standard for FastAPI config)
+    - GitHub Actions (CI/CD is good practice)
+
+    **Should discuss:**
+    - **Argon2 vs Bcrypt**: Argon2 is newer and more resistant to attacks, but Bcrypt is proven and simpler. For industrial on-premises deployment, either works.
+
+    **Your spec has but Codex doesn't:**
+    - Zustand (you have it, Codex omitted client state - good to keep)
+    - ESLint + Prettier (you have it - keep)
+    - Nginx explicitly called out (good to keep)
+
+    **Difference in approach:**
+    - Codex: "consider TimescaleDB later if needed" (start simple with PostgreSQL)
+    - Yours: TimescaleDB from start
+
+    Given time-series is core to DDMS requirements, I'd keep TimescaleDB.
+
+    Would you like me to update stack.md to include SQLAlchemy, Alembic, Pydantic Settings, and GitHub Actions?
+  timestamp: '2025-10-10T04:10:56Z'
+  log_uri: 'claude-code:50ade6fc-6b85-4259-bf27-04457a50f8b8.jsonl'
+- role: user
+  content: |
+    Yes, choose Argon2.
+  timestamp: '2025-10-10T04:26:26Z'
+  log_uri: 'claude-code:50ade6fc-6b85-4259-bf27-04457a50f8b8.jsonl'
+- role: assistant
+  content: |
+    Updated! Added SQLAlchemy 2.x, Alembic, Pydantic Settings, GitHub Actions, and switched from Bcrypt to Argon2. Ready to commit?
+  timestamp: '2025-10-10T04:26:41Z'
+  log_uri: 'claude-code:50ade6fc-6b85-4259-bf27-04457a50f8b8.jsonl'
