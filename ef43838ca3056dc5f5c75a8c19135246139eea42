@@ -1,0 +1,354 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    Read specs/user/requirements.md and make a detailed plan for implementing the features one by one. Design and organize the steps well.
+  timestamp: '2025-10-10T11:59:34Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: assistant
+  content: |
+    Here’s a sequenced, implementation-ready plan mapped to the user requirements. Each phase is a PR-sized unit with clear scope, DB and API changes, UI work, and acceptance criteria. IDs in parentheses map to specs/user/requirements.md.
+
+    **Phase 0: Baseline Hardening**
+    - Goals
+      - Lock in env config, logging, health.
+      - Prepare DB migrations, CI checks.
+    - Backend
+      - Add Alembic env + first migration for empty schema.
+      - Wire `uvicorn` logging via ddms.core.logging:1 and settings in ddms.core.config:1.
+      - Add `/api/version` and `/api/health/details` for diagnostics.
+    - Acceptance
+      - Health endpoints return 200 with env and version.
+      - Alembic `upgrade head` runs clean on fresh DB.
+
+    **Phase 1: AuthN + Roles**
+    - Goals
+      - Owner setup and password rotation (ACC-020, ACC-030).
+      - Admin and read-only roles (ACC-040, ACC-050).
+    - DB
+      - `users(id, username, pw_hash, role, active, created_at, updated_at, must_rotate_pw boolean)`.
+      - Seed first `owner` if none exists on startup (one-time).
+    - Backend
+      - JWT HttpOnly cookie flow: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`.
+      - `must_rotate_pw` gate; `POST /api/auth/rotate-password`.
+      - Admin-only: `POST/PUT/PATCH /api/admin/users`, `PATCH /api/admin/users/:id/activate`.
+      - Utilities in ddms.core.security:1 (implement JWT create/verify).
+    - Frontend
+      - Auth forms in `frontend/src/features/auth/…`, login + forced rotation flow.
+      - Role-gated routes in `@app/routes.tsx`.
+    - Acceptance
+      - Owner must change password on first login (ACC-020).
+      - Owner can change credentials later (ACC-030).
+      - Admin can manage admins and viewers (ACC-040/050).
+
+    **Phase 2: Device + Group Domain**
+    - Goals
+      - CRUD for devices and groups; assignments and audit trail (CONF-010/020/030).
+    - DB
+      - `devices(id, name, location, unit, sample_interval_s, warn_low, warn_high, meta jsonb, active)`.
+      - `device_groups(id, name, description)`.
+      - `group_devices(group_id, device_id)`.
+      - `config_audit(id, entity_type, entity_id, change jsonb, actor_user_id, created_at)`.
+    - Backend
+      - Device admin endpoints: `GET/POST/PATCH/DELETE /api/devices`.
+      - Groups: `GET/POST/PATCH/DELETE /api/groups`, `POST /api/groups/:id/devices`.
+      - Write audit entries on create/update/delete; read-only users blocked for write ops.
+    - Frontend
+      - Devices CRUD screens; Groups CRUD with assign devices UI (transfer/list).
+    - Acceptance
+      - Add/edit/delete devices with preserved audit trail (CONF-010/020).
+      - Create/edit/delete groups and assign devices (CONF-030).
+
+    **Phase 3: Ingestion + Scheduler**
+    - Goals
+      - Poll Modbus devices on schedule; persist readings (DAT-010).
+    - DB
+      - Timeseries: `readings(device_id, ts timestamptz, metric text default 'value', value double precision, tags jsonb null)`.
+      - Convert to hypertable, add index `(device_id, ts)`.
+    - Backend
+      - APScheduler job registry (ddms.scheduler) for device polling.
+      - Modbus client stubs in ddms.ingestion using pymodbus; adapters for TCP/RTU.
+      - Configurable sampling from `devices.sample_interval_s`; per-device job.
+      - `POST /api/devices/:id/test-connection` (admin) to validate settings.
+    - Acceptance
+      - New readings written at sampling interval.
+      - Failures logged with reason; device remains active unless disabled.
+
+    **Phase 4: Realtime Monitoring**
+    - Goals
+      - Live charts with thresholds and highlight (LIV-010/020/030).
+    - Backend
+      - WebSocket route `/ws/live`:
+        - Subscribe by `device_ids` query or post-subscribe message.
+        - Broadcast latest reading per device; include `warn_low/high` for overlay.
+      - Push on each poll and on manual test injection.
+    - Frontend
+      - Live dashboard view (per group, or device multi-select) with ECharts.
+      - Overlays: draw threshold lines; segments colored yellow/red when exceeded.
+      - Persist device selection via URL or store.
+    - Acceptance
+      - Multiple devices stream concurrently (LIV-010).
+      - Threshold markers visible (LIV-020).
+      - Exceeding thresholds shows yellow/red segments (LIV-030).
+
+    **Phase 5: Historical + Export**
+    - Goals
+      - Time-range queries and CSV export (HIS-010/020).
+    - Backend
+      - `GET /api/readings?device_id=…&metric=…&from=…&to=…&sampling=auto`.
+      - Server-side CSV export `GET /api/readings/export?...` streaming response.
+      - Timescale downsampling policies optional follow-up PR.
+    - Frontend
+      - Historical view with date-time pickers and chart; “Export CSV” button.
+      - Smart bucket size selection for dense data.
+    - Acceptance
+      - Users view historical trends for custom range (HIS-010).
+      - CSV export downloads selected dataset (HIS-020).
+
+    **Phase 6: Group Dashboards**
+    - Goals
+      - Group-scoped live/historical dashboards (CONF-040).
+    - Backend
+      - `GET /api/groups/:id/overview` returns devices and basic stats.
+    - Frontend
+      - Group dashboard that aggregates devices’ live tiles and quick charts.
+      - Tabs: “Live” and “History”, pre-scoped to group devices.
+    - Acceptance
+      - Selecting a group scopes charts to assigned devices (CONF-040).
+
+    **Phase 7: Localization + UI Polish**
+    - Goals
+      - English/Chinese switch, responsive layout, subtle transitions (UI-010/020/030).
+    - Frontend
+      - i18next setup in `src/i18n/index.ts`; language switcher in header.
+      - Resource bundles for en/zh; dynamic switch without reload.
+      - AntD layout responsiveness; enter/exit fade transitions for charts/panels.
+    - Acceptance
+      - Language can be switched without reload (UI-010).
+      - Layout clean and responsive (UI-020).
+      - Transitions subtle and non-distracting (UI-030).
+
+    **Phase 8: Hardening + Ops**
+    - Goals
+      - Security, reliability, and observability (ACC-010, DAT-010).
+    - Backend
+      - Cookie security: HttpOnly, SameSite=Strict, Secure in prod.
+      - Optional CSRF double-submit token for unsafe methods (future).
+      - Logging enrichment (request ID), structured logs; basic rate limiting if needed.
+    - Infra
+      - Compose profile with DB (Timescale) and env configs; healthchecks.
+      - Basic retention and compression policies for Timescale (follow-up).
+    - Acceptance
+      - All endpoints auth-guarded appropriately; read-only users cannot mutate.
+      - Containers start reliably; healthchecks pass.
+
+    **Data Model Summary**
+    - Users and roles
+      - `users(role in ['owner','admin','viewer'], must_rotate_pw boolean)`
+    - Devices and groups
+      - `devices(name, location, unit, sample_interval_s, warn_low, warn_high, meta jsonb, active)`
+      - `device_groups(name, description)`, `group_devices(group_id, device_id)`
+    - Readings
+      - `readings(device_id, ts timestamptz, metric text, value double precision, tags jsonb)`
+    - Audit
+      - `config_audit(entity_type, entity_id, change jsonb, actor_user_id, created_at)`
+
+    **API Highlights**
+    - Auth: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/auth/rotate-password`
+    - Users: `GET/POST/PATCH /api/admin/users`, `PATCH /api/admin/users/:id/activate`
+    - Devices: `GET/POST/PATCH/DELETE /api/devices`, `POST /api/devices/:id/test-connection`
+    - Groups: `GET/POST/PATCH/DELETE /api/groups`, `POST /api/groups/:id/devices`
+    - Readings: `GET /api/readings`, `GET /api/readings/export`
+    - Live: `WS /ws/live` (subscribe to device IDs)
+
+    **Frontend Views**
+    - Auth: Login, Forced Password Rotation, Profile
+    - Devices: List, Create/Edit, Detail (test connection), Audit panel
+    - Groups: List, Create/Edit, Assign Devices
+    - Monitoring: Live Dashboard (per group or multi-device), Historical Trends
+    - Settings: Language switch, User management (admins only)
+
+    **Testing Strategy**
+    - Unit
+      - Services, security, schema validation, Modbus adapter mocks, time-bucketing.
+    - Integration
+      - DB migrations, repository queries, auth cookie flow.
+    - E2E (smoke)
+      - Login → rotate password → add device → see live feed → export CSV.
+
+    **Security Notes**
+    - JWT in HttpOnly cookie; SameSite=Strict; Secure in prod.
+    - Password hashing: Argon2 (already scaffolded).
+    - Authorization middleware: role-check decorators for admin/owner endpoints.
+    - Optional CSRF token for state-changing operations if needed later.
+
+    **PR Sequence & Branching**
+    - One PR per phase; smaller internal PRs for large phases (e.g., Phase 2 split Devices vs Groups).
+    - Branch naming: `feature/authn-roles`, `feature/devices-crud`, `feature/groups`, `feature/ingestion`, etc.
+    - Commit messages follow `specs/dev/general.md` with sequence numbers, e.g., `8-feat(auth): JWT cookie login`, `9-feat(devices): CRUD + audit`.
+
+    **Dependencies & Order**
+    - Phase 1 depends on Phase 0.
+    - Phase 3 depends on Phase 2 (devices exist).
+    - Phase 4 depends on Phase 3 (live data).
+    - Phase 5 depends on Phase 3 (historical persisted).
+    - Phase 6 depends on Phase 2/4/5.
+    - Phase 7 can run in parallel once basic views exist.
+
+    If you want, I can translate this into GitHub Issues with labels and a milestone, and scaffold the first DB migration and the AuthN PR next.
+  timestamp: '2025-10-10T12:00:38Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: user
+  content: |
+    Can you state clearly the way to test after each phase? Cite requirement IDs and make sure all are meet after full implementation.
+  timestamp: '2025-10-10T12:10:22Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: assistant
+  content: |
+    Below is a concrete test plan for each phase with clear steps, expected results, and requirement IDs. Follow these sequentially; by the end, all requirements will be covered.
+
+    **Pre‑Setup**
+    - Start services: `docker compose up -d --build`
+    - Frontend: http://localhost:8080
+    - Backend (host): http://localhost:8800
+
+    **Phase 0 Tests — Baseline Hardening**
+    - Health endpoints
+      - `curl http://localhost:8800/health` → 200, includes `status=ok`, `env`.
+      - `curl http://localhost:8080/api/health` → 200, `{"status":"ok"}`.
+    - Alembic
+      - `docker compose exec backend alembic upgrade head` finishes with no errors.
+    - Logs
+      - `docker compose logs backend` show structured startup logs without tracebacks.
+    - Requirements: none directly, foundational for all later phases.
+
+    **Phase 1 Tests — AuthN + Roles (ACC-020, ACC-030, ACC-040, ACC-050)**
+    - First owner login requires rotation (ACC-020)
+      - Attempt login with default credentials at `/login` UI or `POST /api/auth/login`.
+      - Expect redirect/block with “change password” form or `must_rotate_pw=true`.
+      - `POST /api/auth/rotate-password` succeeds; repeat login works normally.
+    - Owner can change credentials (ACC-030)
+      - As owner, change username/password via profile UI or `PATCH /api/auth/me`.
+      - Re-login works only with new credentials; old creds fail.
+    - Admin manages admins and viewers (ACC-040, ACC-050)
+      - As owner/admin, create another admin and a viewer via UI or `/api/admin/users`.
+      - Deactivate/reactivate a user; verify inactive cannot log in.
+      - Verify viewer can browse dashboards but receives 403 on write endpoints (devices, groups).
+    - Cookie & session
+      - Inspect cookie flags (HttpOnly present, SameSite=Strict in prod).
+      - `GET /api/auth/me` returns current user; `POST /api/auth/logout` clears session.
+
+    **Phase 2 Tests — Devices & Groups (CONF-010, CONF-020, CONF-030)**
+    - Devices CRUD (CONF-010, CONF-020)
+      - Create device with: name, location, unit, sampling interval, warn thresholds.
+      - Update and delete device; confirm entries in audit history (UI panel or `GET /api/audit?...`).
+      - Attempt write as viewer; expect 403.
+    - Groups CRUD and assignment (CONF-030)
+      - Create group(s), assign/unassign devices.
+      - Rename/delete group; assignments update accordingly.
+    - Data validation
+      - Sampling interval > 0 enforced; thresholds can be null or numeric; invalids rejected.
+
+    **Phase 3 Tests — Ingestion & Scheduler (DAT-010)**
+    - DB readiness
+      - Ensure TimescaleDB/Postgres is running; `alembic upgrade head` creates readings table/hypertable.
+    - Polling
+      - Configure test device(s) with reachable Modbus endpoint (or simulator).
+      - Use “Test Connection” (UI) or `POST /api/devices/:id/test-connection`:
+        - Success returns connectivity info (latency, basic read).
+      - Start scheduler; verify per-device jobs registered (logs show job scheduling).
+    - Persistence (DAT-010)
+      - Wait > 2× sampling interval; query readings:
+        - UI history quick glance, or `GET /api/readings?device_id=...&from=...&to=...`.
+        - DB check (optional): `SELECT count(*) FROM readings WHERE device_id=...`.
+      - Restart containers; data remains available (persistence confirmed).
+
+    **Phase 4 Tests — Realtime Monitoring (LIV-010, LIV-020, LIV-030)**
+    - WebSocket connectivity
+      - Open live view and select multiple devices; charts begin updating automatically (LIV-010).
+      - Dev-tool WS frames show JSON messages per device; frequency ~ sampling interval.
+    - Threshold overlay (LIV-020)
+      - Charts render warn_low/high as horizontal guides.
+    - Exceed threshold highlighting (LIV-030)
+      - Drive device reading beyond thresholds (simulator or injected test).
+      - Chart segments display yellow (caution) and red (critical) overlay/segment styling.
+
+    **Phase 5 Tests — Historical & Export (HIS-010, HIS-020)**
+    - Historical trends (HIS-010)
+      - Pick device and custom time range; chart renders data with reasonable bucket size.
+      - Change range (last 1h/24h/custom) and verify performance and accuracy.
+    - CSV export (HIS-020)
+      - Click “Export CSV” for the selected device/range.
+      - File downloads; open and confirm headers, timestamps, and values match UI/DB.
+
+    **Phase 6 Tests — Group Dashboards (CONF-040)**
+    - Group-scoped views (CONF-040)
+      - Select a device group; live dashboard shows only assigned devices.
+      - Switch to “History” tab; historical charts and export scope to group devices.
+      - Assign/unassign a device; refresh view; membership reflected correctly.
+
+    **Phase 7 Tests — Localization & UI (UI-010, UI-020, UI-030)**
+    - Language switch (UI-010)
+      - Toggle EN/中文 in header; strings update immediately with no reload.
+      - Refresh page; last language persists.
+    - Layout (UI-020)
+      - Resize browser or use dev tools; dashboards remain readable and well-structured.
+    - Transitions (UI-030)
+      - Navigate between views; animations are smooth and subtle (no disruptive motion).
+
+    **Phase 8 Tests — Hardening & Ops (ACC-010, DAT-010)**
+    - Browser access (ACC-010)
+      - Verify modern desktop browsers (Chrome/Edge) access without extra software.
+    - Security and reliability
+      - In prod mode, cookies have `Secure` (under HTTPS), `HttpOnly`, `SameSite=Strict`.
+      - Rate of WS/API under moderate load is stable; logs include request IDs; errors are structured.
+    - Health & startup
+      - Compose healthchecks pass; services restart cleanly; data intact (DAT-010).
+
+    **Requirements Coverage**
+    - Concepts
+      - DDMS-CON-010: Verified in ACC-010 tests and overall browser delivery.
+      - DDMS-CON-020/030: Realized via devices and groups models (Phase 2) and dashboards (Phase 6).
+    - Access & Authentication
+      - DDMS-ACC-010: Phase 8 (modern browser access, no extra software).
+      - DDMS-ACC-020: Phase 1 (first login requires password change).
+      - DDMS-ACC-030: Phase 1 (owner updates username/password).
+      - DDMS-ACC-040: Phase 1 (admin manages administrators).
+      - DDMS-ACC-050: Phase 1 (read-only users; view-only permissions).
+    - Live Monitoring & Alerts
+      - DDMS-LIV-010: Phase 4 (concurrent real-time charts).
+      - DDMS-LIV-020: Phase 4 (warning threshold markers).
+      - DDMS-LIV-030: Phase 4 (yellow/red highlights when exceeded).
+    - Historical Analysis & Export
+      - DDMS-HIS-010: Phase 5 (historical trend charts for any range).
+      - DDMS-HIS-020: Phase 5 (CSV export of displayed dataset).
+    - Device & Group Configuration
+      - DDMS-CONF-010: Phase 2 (add devices with all fields).
+      - DDMS-CONF-020: Phase 2 (edit/delete with audit trail).
+      - DDMS-CONF-030: Phase 2 (create/edit/delete groups and assignments).
+      - DDMS-CONF-040: Phase 6 (group-scoped live/historical interfaces).
+    - Localization & UI
+      - DDMS-UI-010: Phase 7 (English/Chinese switch without reload).
+      - DDMS-UI-020: Phase 7 (clean responsive layout).
+      - DDMS-UI-030: Phase 7 (subtle dynamic effects).
+    - Data Persistence
+      - DDMS-DAT-010: Phases 3 and 8 (readings, accounts, and configs persisted across restarts).
+
+    If helpful, I can turn these into checklist issues in GitHub with test commands and expected results attached, and wire the first test suites (auth flow and device CRUD) to start automation.
+  timestamp: '2025-10-10T12:11:04Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: user
+  content: |
+    Merge with tests the previous plan and double check with requirements.md. Organize them well and write to specs/dev/roadmap.md
+  timestamp: '2025-10-10T15:01:14Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: assistant
+  content: |
+    I added a detailed, organized roadmap that merges the implementation plan and testing steps, mapped to requirement IDs.
+
+    - New file: specs/dev/roadmap.md:1
+    - Contents: Phases 0–8 with goals, DB/API/UI scope, concrete tests per phase, and an end-to-end requirements coverage checklist. Also includes PR sequencing and testing strategy.
+
+    Want me to open a follow-up PR updating the specs with this roadmap, or include it in the current one?
+  timestamp: '2025-10-10T15:02:23Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
