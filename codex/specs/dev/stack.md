@@ -1,20 +1,24 @@
-# Stack Decisions
+# Technology Stack
 
-First-tier component selections (concise; no implementation details):
+First-tier component selections:
 
 - Backend framework: FastAPI
-- Database: PostgreSQL (consider TimescaleDB later if needed)
+- Database: TimescaleDB (PostgreSQL extension)
 - ORM & migrations: SQLAlchemy 2.x + Alembic
-- Authentication: JWT (HttpOnly cookies) + Argon2
-- Realtime: WebSockets
+- Device communication: pymodbus (Modbus TCP/RTU only)
+- Scheduling: APScheduler
+- Authentication: JWT (HttpOnly cookies, SameSite=Strict) + Argon2
+- API transport: REST endpoints + WebSockets (WebSockets primary for live data)
 - Frontend: React + TypeScript + Vite
 - UI library: Ant Design
 - Charting: ECharts
-- Client data fetching/state: TanStack Query
+- Client state management: TanStack Query + Zustand
 - Internationalization: react-i18next
 - Python package manager: uv
-- Linting & types: Ruff + mypy
-- Testing: pytest
+- Python linting & types: Ruff + mypy
+- Python testing: pytest
+- Frontend linting & formatting: ESLint + Prettier
+- Frontend testing: Vitest
 - CI/CD: GitHub Actions
-- Containerization: Docker Compose
+- Containerization & proxy: Docker Compose + Nginx
 - Configuration management: Pydantic Settings (.env)
