@@ -4,10 +4,13 @@
 
 - **FastAPI** - Async web framework with WebSocket support
 - **TimescaleDB** - PostgreSQL extension for time-series data
+- **SQLAlchemy 2.x** - ORM for database operations
+- **Alembic** - Database migrations
 - **pymodbus** - Modbus TCP/RTU communication
 - **APScheduler** - Background task scheduling (device polling, data cleanup)
 - **JWT** - Authentication tokens in HTTP-only cookies (SameSite=Strict)
-- **Bcrypt** - Password hashing
+- **Argon2** - Password hashing
+- **Pydantic Settings** - Configuration management (.env files)
 - **uv** - Package manager
 - **Ruff** - Linting and formatting
 - **mypy** - Static type checking
@@ -29,6 +32,7 @@
 
 - **Docker** + **Docker Compose** - Containerization
 - **Nginx** - Reverse proxy and static file serving
+- **GitHub Actions** - CI/CD pipeline
 
 ## Communication
 
