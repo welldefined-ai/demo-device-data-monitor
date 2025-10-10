@@ -1,0 +1,365 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    Let’s decide on the system and component choices so you can initialize the project (without implementation). Based on the files under specs/, propose libraries or frameworks for discussion.
+  timestamp: '2025-10-09T15:54:54Z'
+  log_uri: 'claude-code:50ade6fc-6b85-4259-bf27-04457a50f8b8.jsonl'
+- role: assistant
+  content: |
+    I'll examine the specs to understand the project requirements and propose suitable libraries and frameworks.
+  timestamp: '2025-10-09T15:54:58Z'
+  log_uri: 'claude-code:50ade6fc-6b85-4259-bf27-04457a50f8b8.jsonl'
+- role: assistant
+  content: |
+    Based on the requirements, here's my proposal for the system architecture and technology stack:
+
+    ## System Architecture Proposal
+
+    ### **Backend Framework & Core**
+    - **FastAPI** - Modern Python async web framework, excellent for:
+      - Real-time data streaming via WebSockets
+      - REST API for configuration/historical data
+      - Native async support for concurrent device polling
+      - OpenAPI docs auto-generation
+      - Type hints integration (aligns with your PEP 8 requirements)
+
+    ### **Database**
+    - **TimescaleDB** (PostgreSQL extension) - Purpose-built for time-series data:
+      - Automatic data partitioning by time
+      - Efficient compression for historical data
+      - Built-in data retention policies
+      - Familiar SQL interface
+      - Production-proven for industrial IoT
+
+    Alternative: **InfluxDB 2.x** if you prefer a pure time-series DB
+
+    ### **Device Communication**
+    - **pymodbus** - Industry-standard Python Modbus library:
+      - Supports both Modbus TCP and RTU
+      - Async client support
+      - Well-maintained and documented
+
+    ### **Frontend Framework**
+    - **React** with **TypeScript** - Component-based UI:
+      - Large ecosystem for industrial dashboards
+      - TypeScript for type safety
+      - Good mobile/tablet support
+
+    - **Vite** - Build tool (faster than CRA)
+
+    ### **UI Component Library**
+    - **Ant Design** or **Material-UI (MUI)** - Professional appearance:
+      - Pre-built form components
+      - Table/grid components
+      - Icon sets
+      - i18n support built-in
+
+    ### **Charting Library**
+    - **Apache ECharts** or **Recharts**:
+      - Real-time updating charts
+      - Zoom/pan capabilities
+      - Threshold overlays
+      - Tooltip support
+      - Good performance with large datasets
+
+    ### **State Management**
+    - **Zustand** or **Redux Toolkit** - For client-side state
+    - **React Query (TanStack Query)** - For server state/caching
+
+    ### **Internationalization**
+    - **react-i18next** - i18n solution:
+      - Runtime language switching
+      - JSON-based translation files
+      - Namespace support
+
+    ### **Real-time Communication**
+    - **WebSockets** (FastAPI native) for real-time data push
+    - **Server-Sent Events (SSE)** as fallback option
+
+    ### **Authentication**
+    - **JWT** tokens with HTTP-only cookies
+    - **Bcrypt** for password hashing
+    - **FastAPI Security utilities**
+
+    ### **Background Task Processing**
+    - **APScheduler** - For periodic device polling
+    - **asyncio** - For concurrent device communication
+
+    ### **Deployment & Packaging**
+    - **Docker** + **Docker Compose** - Easy on-premises deployment:
+      - Single-command setup
+      - Isolated environment
+      - Easy backup/restore
+
+    - **Nginx** - Reverse proxy serving static files
+
+    ### **Development Tools**
+    - **Ruff** - Linting/formatting (as specified)
+    - **mypy** - Type checking (as specified)
+    - **pytest** - Testing
+    - **uv** - Package management (as specified)
+
+    ## Project Structure Proposal
+    ```
+    ddms/
+    ├── backend/
+    │   ├── ddms/
+    │   │   ├── api/          # FastAPI routes
+    │   │   ├── core/         # Config, security, deps
+    │   │   ├── db/           # Database models & migrations
+    │   │   ├── devices/      # Modbus communication
+    │   │   ├── services/     # Business logic
+    │   │   └── schemas/      # Pydantic models
+    │   ├── tests/
+    │   ├── pyproject.toml
+    │   └── uv.lock
+    ├── frontend/
+    │   ├── src/
+    │   │   ├── components/
+    │   │   ├── pages/
+    │   │   ├── hooks/
+    │   │   ├── services/     # API clients
+    │   │   ├── i18n/         # Translations
+    │   │   └── types/
+    │   ├── package.json
+    │   └── tsconfig.json
+    ├── docker-compose.yml
+    └── README.md
+    ```
+
+    ## Questions for Discussion:
+
+    1. **Database choice**: TimescaleDB vs InfluxDB? (I lean toward TimescaleDB for familiarity + relational data)
+
+    2. **UI library**: Ant Design vs Material-UI? (Ant Design has better table components for industrial UIs)
+
+    3. **Charting**: ECharts vs Recharts? (ECharts more powerful, Recharts more React-native)
+
+    4. **Data retention**: Should we use TimescaleDB's built-in retention policies or implement custom cleanup?
+
+    5. **Authentication**: JWT in HTTP-only cookies or header-based? (Cookies more secure for browser-only access)
+
+    Would you like me to proceed with initializing the project structure with these choices, or would you like to discuss any alternatives?
+  timestamp: '2025-10-09T15:55:34Z'
+  log_uri: 'claude-code:50ade6fc-6b85-4259-bf27-04457a50f8b8.jsonl'
+- role: user
+  content: |
+    For alternatives and "or", compare and give your recommendations. I will choose.
+  timestamp: '2025-10-09T16:10:01Z'
+  log_uri: 'claude-code:50ade6fc-6b85-4259-bf27-04457a50f8b8.jsonl'
+- role: assistant
+  content: |
+    I'll provide detailed comparisons for each decision point:
+
+    ## 1. Database: TimescaleDB vs InfluxDB
+
+    ### TimescaleDB (PostgreSQL extension)
+    **Pros:**
+    - Single database for both relational (users, devices, config) and time-series data
+    - Standard SQL - easier to learn/maintain
+    - ACID compliance for configuration changes
+    - Rich query capabilities (JOINs, CTEs)
+    - Mature backup/restore ecosystem
+    - Lower operational complexity (one database system)
+
+    **Cons:**
+    - Slightly lower write throughput than purpose-built TSDB
+    - More memory usage for time-series workloads
+
+    ### InfluxDB 2.x
+    **Pros:**
+    - Purpose-built for time-series, optimized write performance
+    - Built-in downsampling and retention policies
+    - Lower storage footprint with compression
+    - Flux query language designed for time-series
+
+    **Cons:**
+    - Need separate PostgreSQL for relational data (users, config)
+    - Flux query language has learning curve
+    - More complex deployment (two databases)
+    - Limited JOIN capabilities
+
+    **My Recommendation: TimescaleDB**
+    - Simpler architecture (one database)
+    - Your sampling intervals likely moderate (seconds to minutes), not millisecond-scale
+    - Unified backup/restore
+    - Standard SQL reduces learning curve
+
+    ---
+
+    ## 2. UI Component Library: Ant Design vs Material-UI
+
+    ### Ant Design
+    **Pros:**
+    - Excellent data-heavy components (Table, Form, Descriptions)
+    - Professional, business-oriented design language
+    - Strong i18n support (originally Chinese company)
+    - Better default styling for industrial/enterprise UIs
+    - More opinionated (faster development)
+    - ConfigProvider for global theming
+
+    **Cons:**
+    - Slightly larger bundle size
+    - Less flexible for custom designs
+    - Chinese documentation sometimes better than English
+
+    ### Material-UI (MUI)
+    **Pros:**
+    - Google Material Design - very polished
+    - More flexible styling system (sx props, styled)
+    - Larger community/ecosystem
+    - Better accessibility out-of-box
+    - More granular component control
+
+    **Cons:**
+    - Requires more styling effort for professional look
+    - Data components less feature-rich than Ant Design
+    - More configuration needed for enterprise UIs
+
+    **My Recommendation: Ant Design**
+    - Better fit for industrial/monitoring dashboards
+    - Stronger table components (critical for device lists)
+    - Built-in Form validation integrates well with backend schemas
+    - Good Chinese language support (matches your i18n requirement)
+
+    ---
+
+    ## 3. Charting: Apache ECharts vs Recharts
+
+    ### Apache ECharts
+    **Pros:**
+    - Extremely powerful and feature-rich
+    - Excellent performance with large datasets (10k+ points)
+    - Built-in zoom/pan (dataZoom component)
+    - Rich threshold visualization (markLine, visualMap)
+    - Professional industrial-grade charts
+    - Strong i18n support (Chinese origin)
+    - Canvas rendering (better performance)
+
+    **Cons:**
+    - Steeper learning curve
+    - Configuration-heavy (not React-idiomatic)
+    - Larger bundle size (~900KB)
+    - Imperative API style
+
+    ### Recharts
+    **Pros:**
+    - React-native declarative API (JSX components)
+    - Easier to learn and integrate
+    - Smaller bundle size (~400KB)
+    - Good documentation
+    - TypeScript support
+
+    **Cons:**
+    - Performance degrades with >5000 points
+    - Limited built-in zoom/pan features
+    - Fewer industrial chart types
+    - SVG rendering (slower for real-time updates)
+    - May need custom threshold visualization
+
+    **My Recommendation: Apache ECharts**
+    - Your use case needs real-time updates with historical data (potentially thousands of points)
+    - Professional industrial appearance
+    - Built-in zoom/pan critical for DDMS-HIST-030
+    - Superior threshold overlay capabilities for warning/critical indicators
+    - Trade-off: Learning curve worth it for performance and features
+
+    ---
+
+    ## 4. Data Retention: Built-in vs Custom
+
+    ### TimescaleDB Built-in Retention Policies
+    **Pros:**
+    - Declarative: `SELECT add_retention_policy('readings', INTERVAL '30 days')`
+    - Automatic background cleanup
+    - Battle-tested and optimized
+    - No custom code to maintain
+
+    **Cons:**
+    - Per-hypertable only (all devices same policy)
+    - Less flexible for per-device retention (your requirement DDMS-DEV-060)
+
+    ### Custom Cleanup Service
+    **Pros:**
+    - Per-device retention (matches requirements exactly)
+    - Can implement complex logic (keep critical events longer)
+    - User can trigger manual cleanup (DDMS-DATA-060)
+    - More control over cleanup timing
+
+    **Cons:**
+    - More code to write and maintain
+    - Need to schedule background job
+    - Must handle edge cases (running cleanup, failures)
+
+    **My Recommendation: Hybrid Approach**
+    1. Use TimescaleDB compression for performance
+    2. Implement custom cleanup service using APScheduler
+    3. Run nightly: `DELETE FROM readings WHERE device_id = X AND timestamp < NOW() - retention_interval`
+    4. Reason: Your requirement explicitly states "configurable retention period **per device**"
+
+    ---
+
+    ## 5. Authentication: Cookies vs Headers
+
+    ### JWT in HTTP-only Cookies
+    **Pros:**
+    - XSS protection (JavaScript can't access)
+    - Browser handles sending automatically
+    - Simpler frontend code (no token management)
+    - CSRF can be mitigated with SameSite=Strict
+    - Better for your on-premises, browser-only scenario
+
+    **Cons:**
+    - Need CSRF protection
+    - Cookie size limits (4KB)
+    - Slightly more complex logout (server-side revocation)
+
+    ### JWT in Authorization Headers
+    **Pros:**
+    - No CSRF concerns
+    - Stateless (truly RESTful)
+    - Easier for API clients/mobile apps
+    - No cookie-related issues
+
+    **Cons:**
+    - Vulnerable to XSS (stored in localStorage/memory)
+    - Frontend must manually attach to every request
+    - More complex refresh token flow
+    - Your requirements don't mention mobile apps/APIs
+
+    **My Recommendation: HTTP-only Cookies with SameSite=Strict**
+    - Your deployment is on-premises intranet (DDMS-DEP-010)
+    - Browser-only access (DDMS-DEP-020)
+    - XSS protection more critical than CSRF in your threat model
+    - Simpler frontend implementation
+    - SameSite=Strict sufficient (no cross-site access needed)
+
+    ---
+
+    ## Summary of My Recommendations:
+
+    1. **Database**: TimescaleDB (simpler, unified)
+    2. **UI Library**: Ant Design (industrial UIs, better tables)
+    3. **Charting**: Apache ECharts (performance, features)
+    4. **Data Retention**: Custom cleanup service (per-device requirement)
+    5. **Authentication**: HTTP-only cookies (security, simplicity)
+
+    Which of these do you want to change or confirm?
+  timestamp: '2025-10-09T16:10:40Z'
+  log_uri: 'claude-code:50ade6fc-6b85-4259-bf27-04457a50f8b8.jsonl'
+- role: user
+  content: |
+    Ok, write conclusions into specs/dev/stack.md.
+  timestamp: '2025-10-10T03:52:03Z'
+  log_uri: 'claude-code:50ade6fc-6b85-4259-bf27-04457a50f8b8.jsonl'
+- role: user
+  content: |
+    Don't write directory tree. Just the stack choices. Express clearly and concisely.
+  timestamp: '2025-10-10T03:53:14Z'
+  log_uri: 'claude-code:50ade6fc-6b85-4259-bf27-04457a50f8b8.jsonl'
+- role: assistant
+  content: |
+    Done! I've created `specs/dev/stack.md` with a concise list of technology choices organized by backend, frontend, deployment, and communication layers.
+  timestamp: '2025-10-10T03:53:36Z'
+  log_uri: 'claude-code:50ade6fc-6b85-4259-bf27-04457a50f8b8.jsonl'
