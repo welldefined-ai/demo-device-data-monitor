@@ -1,7 +1,7 @@
 # Project Directory Structure
 
 ```
-ddms/
+claude/
 ├── backend/
 │   ├── ddms/
 │   │   ├── api/              # FastAPI routes and dependencies
