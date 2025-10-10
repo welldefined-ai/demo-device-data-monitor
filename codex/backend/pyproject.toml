@@ -1,0 +1,24 @@
+[project]
+name = "ddms"
+version = "0.0.0"
+description = "DDMS backend service"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.112",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.4",
+    "psycopg[binary]>=3.2",
+    "pymodbus>=3.6",
+    "apscheduler>=3.10",
+    "argon2-cffi>=23.1",
+    "python-jose[cryptography]>=3.3",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+addopts = "-q"
+
