@@ -1,0 +1,93 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    Learn what Claude proposed and see if anything to borrow and merge into the spec: # Technology Stack
+
+    ## Backend
+
+    - **FastAPI** - Async web framework with WebSocket support
+    - **TimescaleDB** - PostgreSQL extension for time-series data
+    - **pymodbus** - Modbus TCP/RTU communication
+    - **APScheduler** - Background task scheduling (device polling, data cleanup)
+    - **JWT** - Authentication tokens in HTTP-only cookies (SameSite=Strict)
+    - **Bcrypt** - Password hashing
+    - **uv** - Package manager
+    - **Ruff** - Linting and formatting
+    - **mypy** - Static type checking
+    - **pytest** - Testing framework
+
+    ## Frontend
+
+    - **React** + **TypeScript** - UI framework
+    - **Vite** - Build tool
+    - **Ant Design** - UI component library
+    - **Apache ECharts** - Charting and visualization
+    - **Zustand** - Client state management
+    - **TanStack Query** - Server state and caching
+    - **react-i18next** - Internationalization
+    - **ESLint** + **Prettier** - Code quality
+    - **Vitest** - Testing framework
+
+    ## Deployment
+
+    - **Docker** + **Docker Compose** - Containerization
+    - **Nginx** - Reverse proxy and static file serving
+
+    ## Communication
+
+    - **WebSockets** - Real-time data push (primary)
+    - **REST API** - Configuration and historical data queries
+  timestamp: '2025-10-10T04:08:05Z'
+  log_uri: 'codex-cli:2025/10/09/rollout-2025-10-09T23-45-42-0199c9a6-4c20-7db1-bf2e-a99a73590612.jsonl'
+- role: user
+  content: |
+    Any discussion of the tech choices?
+  timestamp: '2025-10-10T04:17:20Z'
+  log_uri: 'codex-cli:2025/10/09/rollout-2025-10-09T23-45-42-0199c9a6-4c20-7db1-bf2e-a99a73590612.jsonl'
+- role: assistant
+  content: |
+    Here’s a concise discussion of the added choices and why they make sense, plus a few open decisions to confirm.
+
+    **Highlights**
+    - TimescaleDB: Kept as an optional Postgres extension for scale-up time-series; start plain PostgreSQL for simplicity.
+    - pymodbus: Adds Modbus TCP/RTU polling capability aligned with industrial environments; can live alongside future drivers.
+    - APScheduler: Simple in-process schedulers for polling/cleanup; avoids Celery/Redis complexity until needed.
+    - Auth hashing: Prefer Argon2 over Bcrypt (memory-hard, modern default).
+    - State management: TanStack Query (server state) + Zustand (UI/ephemeral) is a clean split.
+    - Frontend DX: ESLint + Prettier and Vitest pair naturally with Vite.
+    - Nginx: Solid intranet reverse proxy and static serving; easy TLS/headers hardening.
+
+    **Rationales**
+    - TimescaleDB vs InfluxDB: TimescaleDB avoids a second datastore while unlocking hypertables/retention when volume grows.
+    - pymodbus vs alternatives: Widely used, supports TCP/RTU; if OPC UA/MQTT arrive, add drivers rather than swap stack.
+    - APScheduler vs Celery: APScheduler is sufficient for timed polling on a single node; upgrade to Celery/Redis only if distributing workers.
+    - Argon2 vs Bcrypt: Argon2id recommended by modern guidance; tunable memory cost provides better GPU/ASIC resistance.
+    - TanStack Query + Zustand vs Redux: Keeps Redux out unless global complex state emerges; Query handles caching/invalidation best-in-class.
+    - Vitest vs Jest: Vitest integrates with Vite, faster HMR and simpler config for a Vite-native app.
+    - Nginx vs Caddy/Traefik: Nginx is ubiquitous and predictable in enterprise networks; Caddy is simpler but less standard internally.
+
+    **Open Decisions**
+    - Cookie policy: SameSite=Strict maximizes safety for intranet SPAs; if SSO or cross-site redirects are planned, use Lax.
+    - Protocol scope: Is Modbus the only near-term protocol? If OPC UA or MQTT are expected, we’ll formalize a driver interface now.
+    - Scheduler scope: Will devices be polled (pull) or push readings? If push dominates, APScheduler usage should be minimal.
+    - Timescale trigger: Define thresholds (ingest rate, retention horizon, query latency) that justify enabling TimescaleDB.
+
+    If you confirm these points (especially protocol scope and cookie policy), I’ll update the spec with any final clarifications and commit.
+  timestamp: '2025-10-10T04:17:49Z'
+  log_uri: 'codex-cli:2025/10/09/rollout-2025-10-09T23-45-42-0199c9a6-4c20-7db1-bf2e-a99a73590612.jsonl'
+- role: user
+  content: |
+    Choose TimescaleDB, Argon2, only Modbus, APScheduler, and SameSite=Strict.
+  timestamp: '2025-10-10T04:25:18Z'
+  log_uri: 'codex-cli:2025/10/09/rollout-2025-10-09T23-45-42-0199c9a6-4c20-7db1-bf2e-a99a73590612.jsonl'
+- role: assistant
+  content: |
+    Updated specs/dev/stack.md with your final choices and committed.
+
+    - Selections set: TimescaleDB, Argon2, Modbus-only (pymodbus), APScheduler, SameSite=Strict.
+    - Commit: 5-docs(dev): finalize stack selections
+
+    Anything else to refine before scaffolding?
+  timestamp: '2025-10-10T04:26:34Z'
+  log_uri: 'codex-cli:2025/10/09/rollout-2025-10-09T23-45-42-0199c9a6-4c20-7db1-bf2e-a99a73590612.jsonl'
