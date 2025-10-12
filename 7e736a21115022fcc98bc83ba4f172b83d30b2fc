@@ -1,0 +1,38 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    Is it better to rename phases to iterations? Don't make any change. Just asking.
+  timestamp: '2025-10-12T07:15:55Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: assistant
+  content: |
+    Short answer: it depends on how you plan to deliver.
+
+    - Use “Phases” if you want capability-based, stage-gated milestones with clear dependencies (good for an MVP pipeline where each step unlocks the next).
+    - Use “Iterations” if you’ll timebox work (sprints), potentially touching multiple areas in one cycle and revisiting features across cycles.
+    - If you’ll do both (a sequential MVP, then ongoing agile delivery), keep “Phases” for the MVP roadmap and switch to “Iterations” for post‑MVP work.
+    - Practically, the naming won’t affect our APIs/tests; it’s mainly stakeholder signaling. Choose the term that matches your planning cadence and review checkpoints.
+
+    Recommendation: keep “Phases” for this MVP (it reads like a dependency‑driven sequence), and adopt “Iterations” afterward for incremental improvements.
+  timestamp: '2025-10-12T07:16:17Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: user
+  content: |
+    I've manually finalized the roadmap. Reivew my changes and double check all requirements are meet and referenced. Then make a commit.
+  timestamp: '2025-10-12T09:37:49Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: assistant
+  content: |
+    Review complete — all requirements are covered and referenced in the roadmap.
+
+    Coverage check
+    - Verified every requirement ID in specs/user/requirements.md appears in the roadmap. No missing or extra IDs.
+    - Roadmap aligns to MVP constraints: desktop Chrome/Edge only, single-group per device, account deletion (no deactivation), device deletion retains readings, no group-level export.
+
+    Commit
+    - 8.4-docs(dev): finalize roadmap and verify requirements coverage
+
+    If you want, I can push this branch or open a PR with the finalized roadmap.
+  timestamp: '2025-10-12T09:39:41Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
