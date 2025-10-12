@@ -1,0 +1,89 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    Learn ../../ddms-claude/claude/specs/dev/roadmap.md. I want you to take the best of your own roadmap and Claude’s. Discuss with me if any decision to make before updating your roadmap.
+  timestamp: '2025-10-12T04:15:16Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: assistant
+  content: |
+    I read Claude’s roadmap. It’s strong on concrete tasks (file paths, test steps, mock usage) and tight requirement-to-phase mapping. Below is a best‑of merge proposal and decisions to confirm before I update our roadmap.
+
+    What I propose to adopt (keeps MVP constraints)
+    - Structure
+      - Keep our phase layout (Phase 0..8). Fold Claude’s detailed tasking into each phase.
+    - Backend tasks (additions)
+      - Phase 1: Explicit SQLAlchemy models + repos; initial Alembic migration. Files: `ddms/db/models.py`, `ddms/db/repositories/{user,device,reading,group}.py`.
+      - Phase 3: Modbus client wrapper (`ingestion/modbus_client.py`) + poller (`ingestion/poller.py`); update device `status` and `last_reading_at`; robust error handling/retries; APScheduler dynamic job management on create/update/delete.
+      - Phase 5: History API per device with time_bucket aggregation; CSV streaming. Defer continuous aggregates to post‑MVP.
+      - Phase 6: Group management API; keep single‑group constraint; for history/live, prefer client‐side per‑device fetch (see decision 1).
+      - Phase 7: User language preference endpoint (PATCH preferences) and persistence.
+    - Frontend tasks (additions)
+      - Phase 1: Auth store (Zustand), login page, protected routes, layout shell, user management UI.
+      - Phase 2: Device list/form with Modbus params; status/last read/error indicators; TanStack Query.
+      - Phase 4: Dashboard cards + line charts; WS auto‑reconnect; threshold overlays; yellow/red indicators.
+      - Phase 5: History page with device selector, time range picker, zoom; per‑device CSV export.
+      - Phase 6: Groups: list/form/assign; group dashboard (grid of device cards, overlay charts).
+      - Phase 7: react‑i18next config, en/zh resources, language switcher; persist preference.
+    - Testing and verification
+      - Bring over Claude’s concrete test snippets: mocked Modbus tests, simulator steps, cURL examples, WS verification, and FE checks.
+      - Keep our end‑to‑end smoke; update with WS/zoom checks.
+
+    Decisions to make (before I update)
+    1) Group data API for live/history
+       - Option A (recommended for MVP): No group aggregate endpoints; UI fetches per‑device readings and subscribes to WS with multiple device_ids (simpler, fewer endpoints).
+       - Option B: Add group history/current endpoints now (more backend work, better latency for large groups).
+    2) Repository layer
+       - Option A (recommended): Add explicit repository classes (clear seams for unit tests).
+       - Option B: Use SQLAlchemy sessions directly in services (fewer files, faster to code).
+    3) Aggregation strategy for long ranges
+       - Option A (recommended): Use time_bucket downsampling only in MVP; defer continuous aggregates to later.
+       - Option B: Include continuous aggregates in MVP (extra setup/ops work).
+    4) Frontend HTTP client
+       - Option A (recommended): Keep our fetch‑based `src/lib/api.ts` (no extra dep).
+       - Option B: Switch to Axios (Claude’s plan) for interceptors and consistency with many codebases.
+    5) WebSocket message schema
+       - Proposal: `{ device_id, timestamp, value, status }` where `status in {normal, warning, critical}`; include optional `warn_low`, `warn_high` on initial subscription ack so charts can overlay once.
+       - OK to proceed with this?
+    6) Device status model
+       - Proposal: `status` enum field on devices (`online|offline|error`), plus `last_reading_at` and `last_error` text. Confirm?
+
+    Kept MVP constraints
+    - No tablet scope; desktop Chrome/Edge only.
+    - Single‑group per device; no group‑level export.
+    - Account deletion (no deactivation); owner cannot delete itself.
+    - Deleting a device retains historical data.
+    - Modbus TCP required; RTU supported as specified in your requirements.
+
+    If you confirm the decisions (especially 1–4) with your preferred options, I’ll update `specs/dev/roadmap.md` to merge Claude’s actionable detail into our phases and push a commit.
+  timestamp: '2025-10-12T04:16:13Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: user
+  content: |
+    Remove files. Follow your recommendations. Remember our focus now is to define the goal, interfaces and acceptance testing of each phase. Go ahead and update your roadmap.
+  timestamp: '2025-10-12T05:36:29Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: assistant
+  content: |
+    Updated the roadmap to follow our recommendations and your focus: each phase now states the goal, public interfaces, and concrete acceptance tests only. Removed file/task lists.
+
+    Key changes
+    - Structure: Each phase has Goals, Interfaces, Acceptance. IDs map to your MVP spec.
+    - Auth (Phase 1): Owner/admin/viewer, cookie-based JWT, user CRUD. No deactivation or forced rotation.
+    - Devices & Groups (Phase 2): Single-group assignment, device status/last_read/error, Modbus params. Deleting a device retains readings.
+    - Ingestion (Phase 3): Modbus TCP/RTU polling on schedule, connection test endpoint, basic readings query. Persistence across restarts.
+    - Realtime (Phase 4): WebSocket /ws/live with subscribe/unsubscribe. Event schema: {device_id, timestamp, value, status}. Threshold overlays and indicators in UI.
+    - History (Phase 5): Per-device history + CSV endpoints; downsampling via interval=auto; zoom and threshold lines.
+    - Groups (Phase 6): Group dashboards compose per-device APIs and /ws/live; no group aggregate endpoints or group export in MVP.
+    - I18n & UI (Phase 7): Runtime language switch with preference persistence; desktop-focused responsiveness and UI polish.
+    - Ops (Phase 8): Secure cookies, health checks, structured logs; acceptance for browser support and data persistence.
+
+    Files
+    - specs/dev/roadmap.md: updated to the new format and content.
+
+    Commits
+    - 8.2-docs(dev): refactor roadmap to goals, interfaces, acceptance tests
+
+    If you want any interface shape tweaked (e.g., WS messages, endpoint names) say the word and I’ll amend. Ready to push or open a PR with this update.
+  timestamp: '2025-10-12T05:52:26Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
