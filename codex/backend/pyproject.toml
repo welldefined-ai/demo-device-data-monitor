@@ -18,7 +18,14 @@ dependencies = [
     "python-jose[cryptography]>=3.3",
 ]
 
-[tool.pytest.ini_options]
-testpaths = ["backend/tests"]
-addopts = "-q"
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.4",
+    "httpx>=0.28",
+    "ruff>=0.6",
+    "mypy>=1.10",
+]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
