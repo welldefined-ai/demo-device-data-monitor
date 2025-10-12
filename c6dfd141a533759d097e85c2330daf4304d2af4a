@@ -1,0 +1,28 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    Now update specs/dev/roadmap.md according to the updated requirements.
+  timestamp: '2025-10-12T03:59:00Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
+- role: assistant
+  content: |
+    Perfect! I've updated the roadmap to align with the simplified requirements. Key changes made:
+
+    1. **Removed forced password change** requirement (AUTH-020 no longer exists)
+    2. **Removed audit trail** requirement (was mentioned but not in final spec)
+    3. **Simplified threshold configuration** - now just "warning and critical" instead of separate upper/lower with hysteresis
+    4. **Removed per-device data retention** - no longer in device configuration
+    5. **Updated role names** - "read-only" → "viewer" throughout
+    6. **Updated browser support** - Chrome and Edge only (removed Firefox/Safari)
+    7. **Changed Modbus RTU** from optional to required (PROTO-011)
+    8. **Removed tablet support** references
+    9. **Removed Phase 9** - consolidated admin features were removed from requirements
+    10. **Updated requirement count** - 80 → 45 requirements
+    11. **Renumbered all requirement IDs** to match the new spec (e.g., AUTH-010, AUTH-011, AUTH-020, AUTH-021, etc.)
+
+    The roadmap now has 8 phases instead of 9, and the traceability matrix correctly maps all 45 requirements from the updated specification.
+
+    Ready to commit?
+  timestamp: '2025-10-12T04:02:13Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
