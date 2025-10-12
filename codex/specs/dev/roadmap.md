@@ -1,7 +1,7 @@
 # DDMS Development Roadmap
 
-This roadmap sequences implementation work into clear phases, each with
-deliverables, APIs, UI, DB changes, and concrete tests. Requirement IDs
+This roadmap sequences implementation work into clear phases. For each
+phase we state the goal, public interfaces, and acceptance tests. IDs
 refer to specs/user/requirements.md (MVP baseline).
 
 ## Phase 0 — Baseline Hardening
@@ -27,179 +27,134 @@ Requirements
 ## Phase 1 — Authentication & Roles
 
 Goals
-- Secure access with role-based permissions per MVP
+- Role-based access with owner/admin/viewer and session cookies
 
-DB
-- `users(id, username, pw_hash, role['owner','admin','viewer'], created_at, updated_at)`
-- Seed initial `owner` on empty DB
+Interfaces
+- Auth (JWT in HttpOnly cookie):
+  - `POST /api/auth/login`
+  - `POST /api/auth/logout`
+  - `GET  /api/auth/me`
+- Users (owner/admin scope):
+  - `GET  /api/users` (owner only)
+  - `POST /api/users` (admin/owner: create admin/viewer)
+  - `PATCH/DELETE /api/users/{id}` (prevent owner self-delete)
 
-Backend
-- Auth endpoints (JWT in HttpOnly cookie):
-  - `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
-- User management (owner/admin scope):
-  - `GET/POST/PATCH/DELETE /api/admin/users` (owner cannot delete itself)
-- Implement JWT create/verify in `ddms.core.security`
-
-Frontend
-- Login flow; profile change username/password
-- Role-gated routes and navigation
-
-Tests (manual + API)
-- AUTH-011: Owner can change username/password; re-login succeeds
-- AUTH-040: Admin can manage admin and viewer users (create/edit/delete)
-- AUTH-030: Viewer cannot modify data (403 on writes)
-
-Requirements
-- DDMS-AUTH-010/011/020/021/030/040; DDMS-DEP-020
+Acceptance
+- DDMS-AUTH-011: Owner updates username/password; re-login works
+- DDMS-AUTH-040: Admin creates/edits/deletes admin/viewer
+- DDMS-AUTH-030: Viewer receives 403 on write endpoints
+- DDMS-DEP-020: Login and navigation work on Chrome/Edge
 
 ## Phase 2 — Devices & Groups
 
 Goals
-- CRUD for devices and groups; single-group assignment
+- Device CRUD and single-group assignment; show device status
 
-DB
-- `devices(id, name, description, unit, sample_interval_s, warn_low, warn_high, modbus jsonb, created_at, updated_at)`
-- `device_groups(id, name, description, created_at, updated_at)`
-- `group_devices(group_id, device_id)` (enforce at most one group per device)
+Interfaces
+- Devices:
+  - `GET/POST/PATCH/DELETE /api/devices`
+  - Device attributes include: name, description, units, sampling_interval,
+    thresholds (warning/critical), Modbus connection params, status
+    (online/offline/error), last_reading_at
+- Groups:
+  - `GET/POST/PATCH/DELETE /api/groups`
+  - `POST /api/groups/{id}/devices` (assign) and `DELETE /api/groups/{id}/devices/{device_id}` (remove)
+  - Enforce at most one group per device
 
-Backend
-- Devices: `GET/POST/PATCH/DELETE /api/devices`
-- Groups: `GET/POST/PATCH/DELETE /api/groups`, `POST /api/groups/:id/devices`
-- Device status fields exposed: online/offline, last_read_ts, comm_error
-
-Frontend
-- Devices pages: list, create/edit; show status/last-read/error
-- Groups pages: list, create/edit, assign devices (single-group)
-
-Tests
-- DEV-010..020: Create/edit device with name/desc/units/sampling/thresholds
-- DEV-014: Configure Modbus address/register settings
-- DEV-030/031: Delete device; readings retained
-- DEV-040/041/042: Status/last read/error indicators visible
-- GRP-010/020/030/040: Create/rename/delete groups; assign one group per device
-
-Requirements
-- DDMS-DEV-010..014/020/030/031/040/041/042; DDMS-GRP-010..040; DDMS-CON-020/030
+Acceptance
+- DDMS-DEV-010..014/020: Add/edit device with full fields; validation works
+- DDMS-DEV-030/031: Deleting a device retains readings
+- DDMS-DEV-040/041/042: Status/last_reading_at/error visible in list
+- DDMS-GRP-010/020/030/040: CRUD groups; assign one group per device
 
 ## Phase 3 — Ingestion & Scheduler
 
 Goals
-- Poll devices on schedule and persist readings
+- Poll devices via Modbus and persist readings on schedule
 
-DB
-- `readings(device_id, ts timestamptz, metric text default 'value',
-  value double precision, tags jsonb null)`
-- Timescale hypertable and index `(device_id, ts)`
+Interfaces
+- Modbus connection test: `POST /api/devices/{id}/test-connection`
+- Scheduler behavior: poll each device every `sampling_interval` seconds
+- Readings query (basic): `GET /api/readings?device_id=…&from=…&to=…`
 
-Backend
-- APScheduler registry for per-device jobs based on `sample_interval_s`
-- Modbus adapters in `ddms.ingestion` for TCP and RTU with connection test
-- Endpoint: `POST /api/devices/:id/test-connection`
-
-Frontend
-- Device detail: “Test Connection” UI and last run status
-
-Tests
-- DATA-020: Readings written at interval; `GET /api/readings` returns data
-- Restart containers; data persists (configs, users, readings)
-
-Requirements
-- DDMS-DATA-010/011/020; DDMS-PROTO-010/011/012
+Acceptance
+- DDMS-PROTO-010/011/012: TCP and RTU work with configured registers/types
+- DDMS-DEV-013/040/041/042: Scheduler writes readings; status/last_reading_at
+  updates; errors recorded; recovery after outage
+- DDMS-DATA-010/011/020: Data persists across restarts
 
 ## Phase 4 — Realtime Monitoring
 
 Goals
-- Concurrent live charts with threshold markers and highlight
+- Live dashboard with multi-device charts and threshold indicators
 
-Backend
-- WS `/ws/live` subscribe by device IDs; payload includes latest reading and
-  device thresholds for overlay; broadcast on new readings
+Interfaces
+- WebSocket `/ws/live`
+  - Subscribe: `{ type: "subscribe", device_ids: number[] }`
+  - Unsubscribe: `{ type: "unsubscribe", device_ids: number[] }`
+  - Server event: `{ device_id, timestamp, value, status }` where
+    `status ∈ {normal, warning, critical}`
+  - On subscribe ack, server may include `{ thresholds: { warn, critical } }`
 
-Frontend
-- Live dashboard (multi-device, or per group selection)
-- Threshold markers/values; yellow/red indicators; optional color regions
-
-Tests
-- MON-010/020: Multiple devices update live without manual refresh; timestamps visible
-- MON-030/040: Yellow/red indicators on threshold crossings
-- MON-050/060: Threshold markers/regions rendered on charts
-
-Requirements
-- DDMS-MON-010..060
+Acceptance
+- DDMS-MON-010/020: Multiple devices update live; timestamps visible
+- DDMS-MON-030/040: Yellow/red indicators when thresholds crossed
+- DDMS-MON-050/060: Threshold markers/regions rendered on charts
 
 ## Phase 5 — Historical Analysis & CSV Export
 
 Goals
-- Custom time range trends and export
+- Time-range queries with downsampling and per-device CSV export
 
-Backend
-- `GET /api/readings?device_id=…&metric=…&from=…&to=…&sampling=auto`
-- `GET /api/readings/export?...` streams CSV for same filters
+Interfaces
+- `GET /api/readings?device_id=…&from=…&to=…&interval=auto`
+- `GET /api/readings/export?device_id=…&from=…&to=…`
+  (CSV streaming)
 
-Frontend
-- Historical view with time range pickers and “Export CSV”
-
-Tests
-- HIST-010: Charts render correct range; bucket sizing auto-scales
-- HIST-030: Zoom interactions work (in/out)
-- HIST-040: CSV downloads; headers/timestamps/values match UI and DB
-- HIST-050: Threshold lines visible on historical charts
-
-Requirements
-- DDMS-HIST-010/020/030/040/050
+Acceptance
+- DDMS-HIST-010: Charts render chosen range; auto bucket sizing
+- DDMS-HIST-030: Zoom interactions work
+- DDMS-HIST-040: CSV downloads; headers and values correct
+- DDMS-HIST-050: Threshold lines on historical charts
 
 ## Phase 6 — Group Dashboards
 
 Goals
-- Group-scoped live and historical interfaces
+- Group-scoped live and historical views (client-side composition)
 
-Backend
-- `GET /api/groups/:id/overview` summary + device list
+Interfaces
+- No group aggregate endpoints in MVP. UI composes existing device
+  readings API and `/ws/live` with the group’s device IDs.
 
-Frontend
-- Group dashboard with tabs: Live and History; scope to group devices
-
-Tests
-- GRP-050/051: Selecting a group scopes both live and historical charts
-
-Requirements
-- DDMS-GRP-050/051
+Acceptance
+- DDMS-GRP-050/051: Selecting a group scopes both live and historical
+  charts to assigned devices; no group-level export
 
 ## Phase 7 — Localization & UI Polish
 
 Goals
-- English/Chinese switch; desktop-focused responsive layout; subtle transitions
+- English/Chinese switch; desktop-focused responsiveness; UX polish
 
-Frontend
-- i18next setup and resources (en, zh)
-- Language switcher; remember preference; transitions for page/panel changes
+Interfaces
+- i18n runtime switching and persisted preference
 
-Tests
-- I18N-020: Switch language without page reload; content updates instantly
-- I18N-030: Preference remembered across sign-ins
-- UI-010/020/030/040/050/060/070/080/090: Visual and interaction polish per spec
-
-Requirements
-- DDMS-I18N-010..040; DDMS-UI-010..090
+Acceptance
+- DDMS-I18N-020: Switch without reload; UI updates in place
+- DDMS-I18N-030: Preference remembers across sign-ins
+- DDMS-UI-010..090: Visual polish, loading, feedback, contrast, hierarchy
 
 ## Phase 8 — Hardening & Ops
 
 Goals
 - Security, reliability, observability, and ops readiness
 
-Backend
-- Cookie flags: HttpOnly, SameSite=Strict; Secure in prod
-- Structured logs with request IDs; basic error handling; optional rate limiting
+Interfaces
+- Secure cookies (HttpOnly, SameSite=Strict; Secure in prod)
+- Health checks for services; structured logs with request IDs
 
-Infra
-- Compose with DB profile; healthchecks; Timescale retention (optional follow-up)
-
-Tests
-- DEP-020: Access from modern desktop browsers (Chrome, Edge)
-- DATA-020: Restart and data persists; healthchecks green
-
-Requirements
-- DDMS-DEP-020; DDMS-DATA-020
+Acceptance
+- DDMS-DEP-020: Access from modern desktop browsers (Chrome, Edge)
+- DDMS-DATA-020: Restart and data persists; healthchecks green
 
 ---
 
@@ -250,10 +205,10 @@ Data Persistence & Protocols
 
 ## PR Sequence and Conventions
 
-- Create one PR per phase (split large phases as needed)
+- One PR per phase (split large phases if needed)
 - Branch names: `feature/<area>` (e.g., `feature/authn-roles`)
 - Commit messages: `<sequence>-<type>(<scope>): <subject>` per specs/dev/general.md
-- Add short verification steps in each PR description (copy from Tests above)
+- Include Acceptance section from this roadmap in each PR description
 
 ## Testing Strategy Summary
 
