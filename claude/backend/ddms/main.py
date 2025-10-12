@@ -1,12 +1,23 @@
 """FastAPI application entry point."""
 
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from ddms.api.health import router as health_router
+from ddms.core.config import settings
+from ddms.core.logging import setup_logging
+
+# Initialize logging
+setup_logging()
+logger = logging.getLogger(__name__)
+
 app = FastAPI(
     title="DDMS API",
-    description="Distributed Device Monitoring System",
-    version="0.1.0",
+    description="Device Data Monitoring System",
+    version=settings.api_version,
+    debug=settings.debug,
 )
 
 # CORS middleware
@@ -18,14 +29,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.get("/")
-async def root() -> dict[str, str]:
-    """Root endpoint."""
-    return {"message": "DDMS API is running", "version": "0.1.0"}
+# Include routers
+app.include_router(health_router)
 
 
-@app.get("/api/health")
-async def health() -> dict[str, str]:
-    """Health check endpoint."""
-    return {"status": "healthy"}
+@app.on_event("startup")
+async def startup_event() -> None:
+    """Application startup event."""
+    logger.info(
+        "Starting DDMS API",
+        extra={
+            "version": settings.api_version,
+            "environment": settings.environment,
+        },
+    )
+
+
+@app.on_event("shutdown")
+async def shutdown_event() -> None:
+    """Application shutdown event."""
+    logger.info("Shutting down DDMS API")

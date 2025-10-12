@@ -47,18 +47,29 @@ jobs:
           cd claude/backend
           uv pip install --system -e ".[dev]"
 
-      - name: Run linting
+      - name: Run ruff linter
         run: |
           cd claude/backend
-          ruff check .
+          ruff check ddms tests
+
+      - name: Run ruff formatter check
+        run: |
+          cd claude/backend
+          ruff format --check ddms tests
+
+      - name: Run mypy type checker
+        run: |
+          cd claude/backend
           mypy ddms
 
       - name: Run tests
         env:
           DATABASE_URL: postgresql+asyncpg://ddms:password@localhost:5432/ddms_test
+          SECRET_KEY: test-secret-key
+          ENVIRONMENT: test
         run: |
           cd claude/backend
-          pytest --cov=ddms --cov-report=xml
+          pytest -v --cov=ddms --cov-report=term --cov-report=xml
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4

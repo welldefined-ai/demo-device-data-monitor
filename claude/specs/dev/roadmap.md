@@ -25,8 +25,9 @@ This roadmap sequences implementation work into clear iterations, each with deli
 
 ### Tests
 
-- `curl http://localhost:8800/health` → 200 `{status: ok, env}`
-- `curl http://localhost:8080/api/health` → 200 `{status: ok}`
+- `curl http://localhost:8000/health` → 200 `{status: "ok", env: "..."}`
+- `curl http://localhost:8000/api/health` → 200 payload matches root health
+- `curl http://localhost:8000/api/version` → 200 `{version: "..."}`
 - `alembic upgrade head` runs clean on fresh DB
 
 ### Requirements
