@@ -1,0 +1,36 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    Now update specs/dev/roadmap.md according to the updated requirements.
+  timestamp: '2025-10-12T03:59:36Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: assistant
+  content: |
+    Updated the roadmap to match your finalized MVP requirements and committed the change.
+
+    What changed
+    - Synced taxonomy and IDs to the new spec (AUTH, MON, HIST, DEV, GRP, I18N, UI, DATA, PROTO).
+    - Removed first-login password rotation and deactivation; now deletion-based user management.
+    - Devices/Groups phase:
+      - Dropped audit trail.
+      - Enforced single-group assignment.
+      - Added device status/last-read/error indicators and Modbus config fields.
+    - Ingestion:
+      - Explicit Modbus TCP and RTU support called out; connection test endpoint kept.
+    - Live/History:
+      - Tests and requirements now reference MON/HIST IDs; added zoom, threshold lines, optional color regions.
+    - I18n/UI:
+      - Desktop-focused responsive layout; remember language; broader UI polish items.
+    - Checklist and E2E:
+      - Updated coverage checklist and smoke flow (no rotate-password step).
+
+    Files
+    - specs/dev/roadmap.md:1
+
+    Commit
+    - 3.3-docs(dev): align roadmap with finalized MVP requirements
+
+    Want me to open a quick PR updating the roadmap in your codex branch, or push it straight to the existing PR?
+  timestamp: '2025-10-12T04:05:03Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
