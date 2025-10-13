@@ -1,0 +1,61 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    The manual verification you described can be automated. Are they already covered by your current tests?
+  timestamp: '2025-10-13T14:19:05Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: assistant
+  content: |
+    Short answer: mostly yes — with a few gaps.
+
+    What’s already automated by current tests
+    - Health/version endpoints: covered by backend/tests/unit/test_app_smoke.py.
+    - Owner bootstrap + login/me/logout: covered (happy path and invalid login).
+    - Create users: covered for owner creating admin and viewer.
+    - List users: covered for owner and admin; viewer forbidden covered.
+    - Viewer permissions: can update self; cannot update others.
+    - Admin permissions: can list and delete viewer.
+    - Owner delete protection: delete owner blocked.
+
+    Gaps not yet covered
+    - Admin create user (RBAC on POST /api/users as admin).
+    - Viewer forbidden to create user (explicit POST as viewer).
+    - Username uniqueness conflict (create existing; update to existing) → expect 409.
+    - Update username scenario (not just password).
+    - Delete non-existent user → expect 404.
+    - Explicitly assert auth cookie cleared on logout (we currently infer via 401).
+
+    If you want, I can add these as another test commit (e.g., 10.3-test(auth): extend RBAC and constraints tests).
+  timestamp: '2025-10-13T14:19:51Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: user
+  content: |
+    Yes, cover the gaps.
+  timestamp: '2025-10-13T14:20:19Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: assistant
+  content: |
+    All gaps are now covered with automated tests, and the suite passes.
+
+    What I added
+    - Extended integration coverage: `backend/tests/integration/test_auth_users.py:1`
+      - Admin can create users; duplicate create returns 409
+      - Update username success and uniqueness conflict (409)
+      - Viewer forbidden to create users (403)
+      - Logout clears cookie (assert Set-Cookie has ddms_auth= and Max-Age=0); subsequent me returns 401
+      - Admin delete non-existent user returns 404
+
+    Test run
+    - Command: cd backend && PYTHONPATH=. uv run pytest -q
+    - Result: all tests passed
+
+    Committed as
+    - 10.3-test(auth): extend RBAC and constraints coverage
+    - Signature:
+      - 🤖 Generated with [Codex CLI](https://github.com/openai/codex)
+      - Co-authored-by: GPT-5 <cligent@welldefined.ai>
+
+    This fully automates the manual verification steps outlined earlier. Do you want me to move on to the frontend work for Iteration 1?
+  timestamp: '2025-10-13T14:21:41Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
