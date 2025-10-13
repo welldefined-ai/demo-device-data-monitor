@@ -37,7 +37,7 @@ services:
       test:
         - CMD-SHELL
         - >
-          python -c "import json,urllib.request;data=json.loads(urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=5).read());exit(0 if data.get('status')=='ok' else 1)"
+          python -c "import json,urllib.request;data=json.loads(urllib.request.urlopen('http://127.0.0.1:8000/api/health',timeout=5).read());exit(0 if data.get('status')=='ok' else 1)"
       interval: 10s
       timeout: 5s
       retries: 5
