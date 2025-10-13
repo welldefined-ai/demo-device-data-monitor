@@ -79,13 +79,13 @@ This roadmap sequences implementation work into clear iterations, each with deli
 
 **Requirements**:
 
-- [ ] DDMS-AUTH-010: Owner account setup
-- [ ] DDMS-AUTH-011: Update credentials
-- [ ] DDMS-AUTH-020: Owner privileges
-- [ ] DDMS-AUTH-021: Delete users except self
-- [ ] DDMS-AUTH-030: Viewer view-only access
-- [ ] DDMS-AUTH-040: Admin manage users
-- [ ] DDMS-DEP-020: Desktop browser access
+- [x] DDMS-AUTH-010: Owner account setup
+- [x] DDMS-AUTH-011: Update credentials
+- [x] DDMS-AUTH-020: Owner privileges
+- [x] DDMS-AUTH-021: Delete users except self
+- [x] DDMS-AUTH-030: Viewer view-only access
+- [x] DDMS-AUTH-040: Admin manage users
+- [x] DDMS-DEP-020: Desktop browser access
 
 ---
 

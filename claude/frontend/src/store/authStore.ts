@@ -49,7 +49,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         isLoading: false,
         error: null,
       });
-    } catch (error) {
+    } catch {
       set({
         user: null,
         isAuthenticated: false,
@@ -67,7 +67,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: false,
         error: null,
       });
-    } catch (error) {
+    } catch {
       // Even if logout fails, clear local state
       set({
         user: null,

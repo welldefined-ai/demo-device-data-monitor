@@ -1,6 +1,5 @@
 """Integration tests for user management endpoints."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 
@@ -252,7 +251,9 @@ def test_admin_can_change_user_roles(
     assert data["role"] == "admin"
 
 
-def test_delete_user_as_owner(client: TestClient, owner_token: str, viewer_user, db_session) -> None:
+def test_delete_user_as_owner(
+    client: TestClient, owner_token: str, viewer_user, db_session
+) -> None:
     """Test deleting a user as owner."""
     response = client.delete(
         f"/api/users/{viewer_user.id}",
@@ -302,7 +303,9 @@ def test_cannot_delete_owner(client: TestClient, admin_user, db_session) -> None
     assert "Owner accounts cannot be deleted" in data["detail"]
 
 
-def test_viewer_cannot_delete_users(client: TestClient, viewer_user, admin_user, db_session) -> None:
+def test_viewer_cannot_delete_users(
+    client: TestClient, viewer_user, admin_user, db_session
+) -> None:
     """Test viewer cannot delete users."""
     # Login as viewer
     response = client.post(
