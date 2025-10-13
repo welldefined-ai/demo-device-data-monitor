@@ -19,15 +19,16 @@ This roadmap sequences implementation work into clear iterations, each with deli
 
 **Backend**:
 
-- `GET /health` - System health check
 - `GET /api/health` - API health check
 - `GET /api/version` - System version info
 
-### Tests
+### Acceptance
 
-- `curl http://localhost:8800/health` → 200 `{status: ok, env}`
-- `curl http://localhost:8080/api/health` → 200 `{status: ok}`
-- `alembic upgrade head` runs clean on fresh DB
+- `curl http://localhost:8081/api/health` → `{"status":"ok","env":"development"}`
+- `curl http://localhost:8081/api/version` → `{"version":"0.1.0"}`
+- `open http://localhost:8081/api/docs` → Swagger UI loads
+- `alembic upgrade head` → runs clean
+- `docker compose ps` → all services healthy
 
 ### Requirements
 
@@ -78,13 +79,13 @@ This roadmap sequences implementation work into clear iterations, each with deli
 
 **Requirements**:
 
-- [ ] DDMS-AUTH-010: Owner account setup
-- [ ] DDMS-AUTH-011: Update credentials
-- [ ] DDMS-AUTH-020: Owner privileges
-- [ ] DDMS-AUTH-021: Delete users except self
-- [ ] DDMS-AUTH-030: Viewer view-only access
-- [ ] DDMS-AUTH-040: Admin manage users
-- [ ] DDMS-DEP-020: Desktop browser access
+- [x] DDMS-AUTH-010: Owner account setup
+- [x] DDMS-AUTH-011: Update credentials
+- [x] DDMS-AUTH-020: Owner privileges
+- [x] DDMS-AUTH-021: Delete users except self
+- [x] DDMS-AUTH-030: Viewer view-only access
+- [x] DDMS-AUTH-040: Admin manage users
+- [x] DDMS-DEP-020: Desktop browser access
 
 ---
 

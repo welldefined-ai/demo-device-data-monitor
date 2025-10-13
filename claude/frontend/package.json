@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
-    "test": "vitest",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "test:ui": "vitest --ui"
   },
   "dependencies": {

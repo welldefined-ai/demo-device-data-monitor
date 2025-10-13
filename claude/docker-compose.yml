@@ -1,31 +1,24 @@
 services:
-  db:
-    image: timescale/timescaledb:latest-pg16
-    environment:
-      POSTGRES_DB: ddms
-      POSTGRES_USER: ddms
-      POSTGRES_PASSWORD: password
-    volumes:
-      - timescale_data:/var/lib/postgresql/data
-      - ./infra/db/init:/docker-entrypoint-initdb.d
-    ports:
-      - "5433:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ddms"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   backend:
     build:
       context: .
       dockerfile: infra/docker/backend/Dockerfile
+    container_name: claude-backend
     environment:
-      DATABASE_URL: postgresql+asyncpg://ddms:password@db:5432/ddms
-      SECRET_KEY: dev-secret-key-change-in-production
-      DEBUG: "true"
+      - DDMS_ENV=development
+      - DDMS_DATABASE_URL=postgresql+asyncpg://ddms:password@db:5432/ddms
+      - DDMS_SECRET_KEY=dev-secret-key
+      - DDMS_DEBUG=true
     ports:
-      - "8000:8000"
+      - "8001:8000"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          python -c "import json,urllib.request;data=json.loads(urllib.request.urlopen('http://127.0.0.1:8000/api/health',timeout=5).read());exit(0 if data.get('status')=='ok' else 1)"
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
       db:
         condition: service_healthy
@@ -33,14 +26,34 @@ services:
       - ./backend:/app
     command: uvicorn ddms.main:app --host 0.0.0.0 --port 8000 --reload
 
-  frontend:
+  db:
+    image: timescale/timescaledb:latest-pg16
+    container_name: claude-db
+    environment:
+      - POSTGRES_DB=ddms
+      - POSTGRES_USER=ddms
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5433:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./infra/db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ddms -d ddms"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
     build:
       context: .
       dockerfile: infra/docker/frontend/Dockerfile
-    ports:
-      - "80:80"
+    container_name: claude-web
     depends_on:
-      - backend
+      backend:
+        condition: service_started
+    ports:
+      - "8081:80"
 
 volumes:
-  timescale_data:
+  db-data:
