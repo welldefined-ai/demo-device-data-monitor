@@ -76,7 +76,7 @@ export const AppLayout: React.FC = () => {
           padding: '0 24px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
           <Typography.Title
             level={4}
             style={{ color: 'white', margin: 0, marginRight: 32 }}
@@ -90,19 +90,17 @@ export const AppLayout: React.FC = () => {
             selectedKeys={[location.pathname]}
             items={navItems}
             onClick={({ key }) => navigate(key)}
-            style={{ flex: 1, minWidth: 0 }}
+            style={{ minWidth: 300, border: 'none' }}
+            overflowedIndicator={null}
           />
         </div>
 
         <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
           <Space style={{ cursor: 'pointer' }}>
             <Avatar icon={<UserOutlined />} />
-            <Space direction="vertical" size={0}>
-              <Text style={{ color: 'white' }}>{user?.username}</Text>
-              <Text type="secondary" style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)' }}>
-                {user?.role}
-              </Text>
-            </Space>
+            <Text style={{ color: 'white' }}>
+              {user?.username} ({user?.role})
+            </Text>
           </Space>
         </Dropdown>
       </Header>
