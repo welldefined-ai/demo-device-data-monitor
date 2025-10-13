@@ -1,0 +1,176 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    Review docker-compose.yml and ../../ddms-claude/claude/docker-compose.yml. Any architectural difference? If so, which is best practice?
+  timestamp: '2025-10-12T13:49:05Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: assistant
+  content: |
+    Key differences between the two Compose files:
+
+    1. **Frontend routing**
+       - **Codex**: `ddms-web` (Nginx) serves the built React app and proxies `/api` and `/ws` to FastAPI. Browser traffic goes through Nginx (`http://localhost:8080`).
+       - **Claude**: Frontend runs in its own container (also Nginx) on port 80, but the backend listens directly on port 8000; there’s no proxy between them.
+
+       🔎 If you want a production-style deployment where the SPA and API share a host/port, Codex’s proxy approach is best practice. For pure dev convenience, Claude’s direct split (separate ports) is simpler.
+
+    2. **Backend-to-DB dependency**
+       - **Codex**: backend relies on `DDMS_DATABASE_URL`, but there’s no `depends_on` against the DB. The container exposes port 8800 and starts as soon as it’s built.
+       - **Claude**: backend declares `depends_on` with `condition: service_healthy`, waiting for TimescaleDB to pass `pg_isready`.
+
+       💡 Consider adding the same health-conditioned `depends_on` in Codex to avoid race conditions on startup—especially once migrations run automatically.
+
+    3. **Runtime posture**
+       - **Codex**: no bind mounts; backend runs as packaged image (production flavor). Ports 8800/8080/5432.
+       - **Claude**: mounts the backend source at `/app` and runs `uvicorn ... --reload`, which is a development workflow.
+
+       ✅ For shared dev/prod parity, Codex’s “build once, run immutable image” is the healthier baseline. If you need hot reload locally, enable volumes/`--reload` via a dev-only override (`docker-compose.dev.yml`), not your main stack.
+
+    4. **Database exposure**
+       - **Codex**: DB published on host 5432 (default), which may conflict with local installs.
+       - **Claude**: DB published as 5433:5432, avoiding collisions.
+
+       🔁 You might follow Claude here: map TimescaleDB to 5433 (or restrict to internal network) to avoid clashing with a local Postgres instance.
+
+    Summary recommendation
+    - Keep Codex’s Nginx proxy architecture for production parity.
+    - Add a DB health-dependent `depends_on` to backend.
+    - Consider moving the DB’s host port away from 5432 or disable host publishing entirely if not needed.
+    - Offer a separate dev override for “mount/--reload” if hot reload is desired; leave the main compose file production-like.
+
+    That gives you the best of both worlds: a stable, production-aligned stack with the option to layer development conveniences when needed.
+  timestamp: '2025-10-12T13:55:48Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: user
+  content: |
+    Follow you recommendations. Disable host publishing entirely.
+  timestamp: '2025-10-12T14:29:07Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: assistant
+  content: |
+    Updates applied:
+
+    - **docker-compose.yml** now:
+      - Runs TimescaleDB without publishing port 5432 to the host, avoiding conflicts.
+      - Adds a `depends_on` with health-check gating so the backend waits for the database.
+      - Uses a Python-based health check inside the backend container (no curl dependency).
+      - Keeps the Nginx proxy fronting the React bundle and proxying `/api`/`/ws` as before.
+
+    - Stack restarted (`docker compose up -d`), backend and db are healthy.
+
+    - Alembic baseline confirmed: `cd backend && PYTHONPATH=. uv run alembic upgrade head`.
+
+    Manual verification (Iteration 0):
+    1. Ensure stack is up: `docker compose up -d`.
+    2. Visit `http://localhost:8080/api/docs` (FastAPI docs).
+    3. `curl http://localhost:8080/api/health` → `{"status":"ok","env":"production","version":"0.0.0"}`.
+    4. `curl http://localhost:8080/api/version` → `{"version":"0.0.0"}`.
+    5. (Optional direct) `curl http://localhost:8800/health`.
+    6. Logs: `docker compose logs backend` (shows app started).
+    7. Tests: `cd backend && PYTHONPATH=. uv run pytest -q`.
+    8. Shutdown when done: `docker compose down`.
+
+    Let me know when you’d like this change staged/committed or if further adjustments are needed.
+  timestamp: '2025-10-12T14:32:14Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: user
+  content: |
+    Take reference from ../../ddms-claude/claude/docker-compose.* (two files), and make your final version.
+  timestamp: '2025-10-13T07:43:24Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: user
+  content: |
+    You don't necessarily follow Claude's approach. Just take what Claude does better if any.
+  timestamp: '2025-10-13T07:44:14Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: assistant
+  content: |
+    Updates made:
+
+    - Added smart DB startup dependency and internal-only database exposure.
+    - Switched backend healthcheck to a Python script that ensures “status” is “ok”.
+    - Added `docker-compose.dev.yml` for optional dev overrides (hot reload, local DB port).
+
+    Current behavior: resources come up cleanly (`docker compose up -d`), API endpoints respond, but the container’s healthcheck remains `unhealthy` even though `/api/health` returns `{"status":"ok","env":"production","version":"0.0.0"}`. The inline Python command runs successfully when executed manually inside the container, so the healthcheck failure is likely due to either `python` not being in PATH for the healthcheck command or the command buffer not being interpreted correctly by sh. If this matters, we should revisit the healthcheck command before finalizing.
+
+    Let me know if you want me to adjust the healthcheck further or document the limitation.
+  timestamp: '2025-10-13T07:49:30Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: user
+  content: |
+    Alas, I revoke my decisions. Let's just keep ONE docker file that is most convenient for dev. We will make another production-ready one in a later iteration. Keep to the original roadmap.md.
+  timestamp: '2025-10-13T07:58:58Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: assistant
+  content: |
+    ✅ **Single Dev-Friendly Compose Stack**
+
+    - `docker-compose.yml` is back to a single, development-oriented setup:
+      - TimescaleDB is published on `5432` for local tools, with `pg_isready` health checks.
+      - Backend now mounts `./backend` and runs `uvicorn ddms.main:app --reload` on `8000:8000`, so code changes hot-reload.
+      - Health check runs via an inline Python command against `/health`.
+      - Frontend remains the Nginx-served build on `8080:80`.
+    - Removed the extra `docker-compose.dev.yml`.
+    - Restored `specs/dev/roadmap.md` to your requested version (the original text).
+
+    🐳 **Run the stack**
+
+    ```bash
+    docker compose up -d
+    # see containers:
+    docker ps
+    ```
+
+    - `ddms-db`, `ddms-backend`, `ddms-web` should all report `healthy`.
+
+    🔍 **Manual checks**
+
+    ```bash
+    curl http://localhost:8080/api/health   # -> {"status":"ok","env":"development","version":"0.0.0"}
+    curl http://localhost:8080/api/version  # -> {"version":"0.0.0"}
+    # Optional backend-only check:
+    curl http://localhost:8000/health       # -> same JSON
+    ```
+
+    🧪 **Tests & migrations**
+
+    ```bash
+    cd backend
+    PYTHONPATH=. uv run pytest -q
+    PYTHONPATH=. uv run alembic upgrade head   # against the dockerized DB
+    ```
+
+    The root `http://localhost:8080/health` is still the SPA HTML (same as before); API health endpoints live under `/api/*`.
+
+    Next steps (when you’re ready): I can stage/commit this change or leave the working tree as-is.
+  timestamp: '2025-10-13T08:03:00Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: user
+  content: |
+    The version should be 0.1.0. Remove version from api/health. Isn't backend-only check similar to API check? If so, remove it.
+  timestamp: '2025-10-13T08:07:59Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
+- role: assistant
+  content: |
+    ✅ Updates done for your Iteration 0 manual verification:
+
+    - Version bumped to **0.1.0** (`backend/ddms/__init__.py`) and surfaced via `/api/version`.
+    - `/api/health` now returns `{status, env}` (no version). Added matching test; removed redundant root `/health` route/tests.
+    - `docker-compose.yml` now follows the dev-friendly setup:
+      - Backend runs `uvicorn ... --reload` on host port 8000 with the code mounted.
+      - TimescaleDB exposed on host port 5432 for tooling.
+      - Frontend on port 8080 serving the SPA + `/api/*` proxy.
+    - Roadmap updated to reference only `/api/health` and `/api/version` for Iteration 0 verification.
+
+    **Manual verification summary**
+
+    1. `docker compose up -d`
+    2. `curl http://localhost:8080/api/health` → `{"status":"ok","env":"development"}`
+    3. `curl http://localhost:8080/api/version` → `{"version":"0.1.0"}`
+    4. `cd backend && PYTHONPATH=. uv run pytest -q`
+    5. (Optional) `PYTHONPATH=. uv run alembic upgrade head`
+
+    Everything’s running (containers healthy). No commits made yet. Let me know when you’d like me to stage/commit or add the testing spec.
+  timestamp: '2025-10-13T08:24:32Z'
+  log_uri: 'codex-cli:2025/10/10/rollout-2025-10-10T14-55-08-0199cce6-e71f-79d1-9182-3ffefd240aa2.jsonl'
