@@ -89,3 +89,87 @@ def test_user_rbac_owner_admin_viewer(client: TestClient) -> None:
     del_owner = client.delete("/api/users/1")
     assert del_owner.status_code == 400
 
+
+def test_admin_create_user_and_uniqueness_and_update(client: TestClient) -> None:
+    # Owner creates an admin
+    res = client.post("/api/auth/login", json={"username": "owner", "password": "owner"})
+    assert res.status_code == 200
+
+    admin2 = client.post(
+        "/api/users/", json={"username": "admin2", "password": "secret", "role": "admin"}
+    )
+    assert admin2.status_code == 201, admin2.text
+
+    # Switch to admin2
+    client.post("/api/auth/logout")
+    res = client.post("/api/auth/login", json={"username": "admin2", "password": "secret"})
+    assert res.status_code == 200
+
+    # Create two viewers
+    view_a = client.post(
+        "/api/users/", json={"username": "view_a", "password": "pw", "role": "viewer"}
+    )
+    assert view_a.status_code == 201, view_a.text
+    view_a_id = view_a.json()["id"]
+
+    view_b = client.post(
+        "/api/users/", json={"username": "view_b", "password": "pw", "role": "viewer"}
+    )
+    assert view_b.status_code == 201, view_b.text
+    view_b_id = view_b.json()["id"]
+
+    # Duplicate create should conflict
+    dup = client.post(
+        "/api/users/", json={"username": "view_b", "password": "pw", "role": "viewer"}
+    )
+    assert dup.status_code == 409
+
+    # Update to existing username should conflict
+    upd_conflict = client.patch(f"/api/users/{view_b_id}", json={"username": "view_a"})
+    assert upd_conflict.status_code == 409
+
+    # Happy path: rename to a unique username
+    upd_ok = client.patch(f"/api/users/{view_b_id}", json={"username": "view_b_renamed"})
+    assert upd_ok.status_code == 200
+    assert upd_ok.json()["username"] == "view_b_renamed"
+
+
+def test_viewer_cannot_create_and_admin_delete_missing_and_logout_cookie(client: TestClient) -> None:
+    # Owner creates a viewer
+    res = client.post("/api/auth/login", json={"username": "owner", "password": "owner"})
+    assert res.status_code == 200
+    viewer = client.post(
+        "/api/users/", json={"username": "view_c", "password": "pw", "role": "viewer"}
+    )
+    assert viewer.status_code == 201, viewer.text
+    client.post("/api/auth/logout")
+
+    # Viewer cannot create users
+    res = client.post("/api/auth/login", json={"username": "view_c", "password": "pw"})
+    assert res.status_code == 200
+    forbidden = client.post(
+        "/api/users/", json={"username": "should_fail", "password": "pw", "role": "viewer"}
+    )
+    assert forbidden.status_code == 403
+
+    # Logout clears cookie
+    out = client.post("/api/auth/logout")
+    assert out.status_code == 200
+    set_cookie = out.headers.get("set-cookie", "")
+    assert "ddms_auth=" in set_cookie and "Max-Age=0" in set_cookie
+    me = client.get("/api/auth/me")
+    assert me.status_code == 401
+
+    # Admin delete missing user id returns 404
+    client.post("/api/auth/logout")
+    res = client.post("/api/auth/login", json={"username": "owner", "password": "owner"})
+    assert res.status_code == 200
+    admin3 = client.post(
+        "/api/users/", json={"username": "admin3", "password": "secret", "role": "admin"}
+    )
+    assert admin3.status_code == 201
+    client.post("/api/auth/logout")
+    res = client.post("/api/auth/login", json={"username": "admin3", "password": "secret"})
+    assert res.status_code == 200
+    missing = client.delete("/api/users/999999")
+    assert missing.status_code == 404
