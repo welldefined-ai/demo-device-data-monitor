@@ -1,0 +1,48 @@
+schema: tigs.chat/v1
+messages:
+- role: assistant
+  content: |
+    ✅ **Bug 2 fix deployed** (build: `index-BWC948nM.js`)
+
+    **Fixed:** User dropdown in top right now shows `username (role)` on a single line instead of stacked vertically.
+
+    **Please test:** Login and check the top right corner - the username and role should now be fully visible on one line.
+
+    Confirm if it works, and I'll move to Bug 3.
+  timestamp: '2025-10-13T15:34:08Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
+- role: assistant
+  content: |
+    ✅ **Bug 3 fix deployed** (build: `index-BDRxr5eb.js`)
+
+    **Fixed:** Menu style changed from `flex: 1, minWidth: 0` to `flex: 'none'` to prevent Dashboard from collapsing into overflow menu.
+
+    **Expected:**
+    - Viewer sees Dashboard menu item directly in navigation bar (not in "..." overflow)
+    - Admin/Owner see both Dashboard and Users directly in navigation bar
+
+    **Please test:** Login as viewer - Dashboard should now be visible directly in the navigation, not in an overflow menu.
+  timestamp: '2025-10-13T15:36:44Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
+- role: user
+  content: |
+    Bug 3 is not fixed. Still the same.
+  timestamp: '2025-10-13T15:48:15Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
+- role: assistant
+  content: |
+    Let me check the issue more carefully. The problem might be that the Menu needs more explicit width control:
+  timestamp: '2025-10-13T15:48:28Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
+- role: assistant
+  content: |
+    ✅ **Bug 3 fix v2 deployed** (build: `index-CfBMUgLn.js`)
+
+    **Changes:**
+    - Set `overflowedIndicator={null}` to disable overflow menu
+    - Set `minWidth: 300` to ensure menu has space
+    - Added `border: 'none'` for cleaner appearance
+
+    **Please test:** Login as viewer - Dashboard should now appear directly in the navigation bar, not in "..." menu.
+  timestamp: '2025-10-13T15:49:00Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
