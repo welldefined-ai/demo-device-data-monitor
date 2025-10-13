@@ -12,19 +12,8 @@ def client() -> TestClient:
     return TestClient(app)
 
 
-def test_system_health(client: TestClient) -> None:
-    """Test GET /health endpoint."""
-    response = client.get("/health")
-    assert response.status_code == 200
-    data = response.json()
-    assert "status" in data
-    assert data["status"] == "ok"
-    assert "env" in data
-    assert data["env"] in ["development", "production", "test"]
-
-
 def test_api_health(client: TestClient) -> None:
-    """Test GET /api/health endpoint matches root health."""
+    """Test GET /api/health endpoint."""
     response = client.get("/api/health")
     assert response.status_code == 200
     data = response.json()

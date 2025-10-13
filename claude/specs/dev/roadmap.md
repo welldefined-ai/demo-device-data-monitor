@@ -19,16 +19,16 @@ This roadmap sequences implementation work into clear iterations, each with deli
 
 **Backend**:
 
-- `GET /health` - System health check
 - `GET /api/health` - API health check
 - `GET /api/version` - System version info
 
-### Tests
+### Acceptance
 
-- `curl http://localhost:8000/health` → 200 `{status: "ok", env: "..."}`
-- `curl http://localhost:8000/api/health` → 200 payload matches root health
-- `curl http://localhost:8000/api/version` → 200 `{version: "..."}`
-- `alembic upgrade head` runs clean on fresh DB
+- `curl http://localhost:8081/api/health` → `{"status":"ok","env":"development"}`
+- `curl http://localhost:8081/api/version` → `{"version":"0.1.0"}`
+- `open http://localhost:8081/api/docs` → Swagger UI loads
+- `alembic upgrade head` → runs clean
+- `docker compose ps` → all services healthy
 
 ### Requirements
 

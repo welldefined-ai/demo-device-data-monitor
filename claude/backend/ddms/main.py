@@ -18,6 +18,9 @@ app = FastAPI(
     description="Device Data Monitoring System",
     version=settings.api_version,
     debug=settings.debug,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
 )
 
 # CORS middleware
@@ -40,7 +43,7 @@ async def startup_event() -> None:
         "Starting DDMS API",
         extra={
             "version": settings.api_version,
-            "environment": settings.environment,
+            "environment": settings.env,
         },
     )
 

@@ -12,12 +12,13 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
+        env_prefix="DDMS_",
         case_sensitive=False,
         extra="ignore",
     )
 
     # Environment
-    environment: Literal["development", "production", "test"] = Field(
+    env: Literal["development", "production", "test"] = Field(
         default="development",
         description="Runtime environment",
     )
