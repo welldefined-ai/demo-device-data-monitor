@@ -1,5 +1,7 @@
 """Tests for Alembic database migrations."""
 
+import os
+
 import pytest
 from alembic.config import Config
 from sqlalchemy import create_engine, text
@@ -11,19 +13,30 @@ from alembic import command
 def alembic_config() -> Config:
     """Create Alembic configuration."""
     config = Config("alembic.ini")
+    # Override database URL from environment if set (for CI)
+    db_url = os.environ.get("DDMS_DATABASE_URL")
+    if db_url:
+        sync_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
+        config.set_main_option("sqlalchemy.url", sync_url)
     return config
 
 
+@pytest.mark.skipif(
+    os.environ.get("DDMS_DATABASE_URL", "").startswith("sqlite"),
+    reason="Migration tests require PostgreSQL",
+)
 def test_migrations_upgrade_head(alembic_config: Config) -> None:
     """Test that migrations can be applied to an empty database."""
-    # This test verifies that `alembic upgrade head` runs without errors
-    # For Iteration 0, we have an empty migration which should succeed
     try:
         command.upgrade(alembic_config, "head")
     except Exception as e:
         pytest.fail(f"Migration upgrade failed: {e}")
 
 
+@pytest.mark.skipif(
+    os.environ.get("DDMS_DATABASE_URL", "").startswith("sqlite"),
+    reason="Migration tests require PostgreSQL",
+)
 def test_migrations_downgrade_base(alembic_config: Config) -> None:
     """Test that migrations can be rolled back."""
     try:
@@ -41,6 +54,10 @@ def test_database_connection() -> None:
 
     # Create a synchronous engine for testing
     sync_url = str(settings.database_url).replace("postgresql+asyncpg://", "postgresql://")
+    # Skip test if using SQLite
+    if sync_url.startswith("sqlite"):
+        pytest.skip("Database connection test requires PostgreSQL")
+
     engine = create_engine(sync_url)
 
     try:

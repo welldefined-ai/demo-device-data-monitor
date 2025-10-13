@@ -64,9 +64,9 @@ jobs:
 
       - name: Run tests
         env:
-          DATABASE_URL: postgresql+asyncpg://ddms:password@localhost:5432/ddms_test
-          SECRET_KEY: test-secret-key
-          ENVIRONMENT: test
+          DDMS_DATABASE_URL: postgresql+asyncpg://ddms:password@localhost:5432/ddms_test
+          DDMS_SECRET_KEY: test-secret-key
+          DDMS_ENV: test
         run: |
           cd claude/backend
           pytest -v --cov=ddms --cov-report=term --cov-report=xml
