@@ -23,9 +23,10 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-# from ddms.db.models import Base
-# target_metadata = Base.metadata
-target_metadata = None
+from ddms.db.base import Base
+from ddms.db.models import User  # noqa: F401 - Import to ensure models are registered
+
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
