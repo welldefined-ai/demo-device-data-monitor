@@ -11,7 +11,6 @@ def test_hash_verify_password() -> None:
 def test_jwt_roundtrip() -> None:
     token = create_jwt({"sub": 123, "role": "admin"}, expires_in_seconds=60)
     payload = decode_jwt(token)
-    assert payload["sub"] == 123
+    assert payload["sub"] == "123"
     assert payload["role"] == "admin"
     assert "iat" in payload and "exp" in payload
-

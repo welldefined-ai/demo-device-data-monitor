@@ -30,7 +30,12 @@ def create_jwt(payload: dict[str, Any], *, expires_in_seconds: int | None = None
     st = settings or get_settings()
     now = datetime.now(timezone.utc)
     exp = now + timedelta(seconds=expires_in_seconds or 60 * 60 * 8)  # default 8h
-    to_encode = {**payload, "iat": int(now.timestamp()), "exp": int(exp.timestamp())}
+    # Ensure subject is a string to satisfy JWT claim validation
+    subj = payload.get("sub")
+    normalized = {**payload}
+    if subj is not None and not isinstance(subj, str):
+        normalized["sub"] = str(subj)
+    to_encode = {**normalized, "iat": int(now.timestamp()), "exp": int(exp.timestamp())}
     return jwt.encode(to_encode, st.secret_key, algorithm=st.jwt_algorithm)
 
 

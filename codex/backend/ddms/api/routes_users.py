@@ -56,7 +56,7 @@ def users_update(
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_roles(Role.ADMIN, Role.OWNER))])
-def users_delete(user_id: int = Path(..., ge=1), session: SessionDep = Depends(get_session)) -> None:
+def users_delete(session: SessionDep, user_id: int = Path(..., ge=1)) -> None:
     target = session.get(User, user_id)
     if not target:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -64,4 +64,3 @@ def users_delete(user_id: int = Path(..., ge=1), session: SessionDep = Depends(g
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete owner account")
     delete_user(session, target)
     return None
-
