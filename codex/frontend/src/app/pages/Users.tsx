@@ -16,7 +16,7 @@ export function UsersPage(): JSX.Element {
   const load = async () => {
     try {
       setLoading(true);
-      const users = await api.get<User[]>('/users');
+      const users = await api.get<User[]>('/users/');
       setData(users);
     } catch (e: any) {
       msgApi.error(e?.message ?? 'Failed to load users');
@@ -108,4 +108,3 @@ export function UsersPage(): JSX.Element {
     </Card>
   );
 }
-

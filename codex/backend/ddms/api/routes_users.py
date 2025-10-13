@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Response, status
 from sqlalchemy.orm import Session
 
 from ddms.api.deps import SessionDep, get_current_user, require_roles
@@ -55,12 +55,14 @@ def users_update(
     return UserOut.model_validate(updated)
 
 
-@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_roles(Role.ADMIN, Role.OWNER))])
-def users_delete(session: SessionDep, user_id: int = Path(..., ge=1)) -> None:
+@router.delete(
+    "/{user_id}", status_code=status.HTTP_200_OK, dependencies=[Depends(require_roles(Role.ADMIN, Role.OWNER))]
+)
+def users_delete(session: SessionDep, user_id: int = Path(..., ge=1)) -> dict[str, bool]:
     target = session.get(User, user_id)
     if not target:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     if target.role == Role.OWNER:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete owner account")
     delete_user(session, target)
-    return None
+    return {"ok": True}

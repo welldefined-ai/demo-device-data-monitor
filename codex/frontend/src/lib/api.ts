@@ -12,7 +12,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const text = await res.text();
     throw new Error(text || `HTTP ${res.status}`);
   }
-  return (await res.json()) as T;
+  // Handle no-content responses gracefully (e.g., 204)
+  if (res.status === 204 || res.status === 205) {
+    return undefined as unknown as T;
+  }
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) {
+    // Fallback: if body is empty, return undefined; otherwise return text
+    const text = await res.text();
+    return (text ? (text as unknown as T) : (undefined as unknown as T));
+  }
+  const text = await res.text();
+  if (!text) {
+    return undefined as unknown as T;
+  }
+  return JSON.parse(text) as T;
 }
 
 export const api = {
@@ -22,4 +36,3 @@ export const api = {
   patch: <T>(path: string, body?: unknown) => request<T>(path, { method: 'PATCH', body: JSON.stringify(body ?? {}) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 };
-
