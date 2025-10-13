@@ -1,0 +1,65 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    Before frontend, add more tests and give me steps for manual verification for the current status.
+  timestamp: '2025-10-13T12:05:04Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: assistant
+  content: |
+    I added integration tests for auth and RBAC and kept unit coverage for security utilities. Below are the changes and manual verification steps.
+
+    **Added Tests**
+    - SQLite-backed integration tests with dependency overrides
+      - Test fixtures: `backend/tests/conftest.py:1` (in‑memory SQLite via `StaticPool`, overrides for DB session and startup bootstrap)
+      - Auth flow tests: `backend/tests/integration/test_auth_users.py:1`
+        - Login invalid/valid, me, logout
+        - Owner creates admin/viewer; listing users
+        - Viewer cannot list or edit others; can update self
+        - Admin can list and delete viewer; cannot delete owner
+    - Security unit tests
+      - Hash/verify and JWT roundtrip: `backend/tests/unit/test_security.py:1`
+
+    **Manual Verification**
+    - Option A: Docker (recommended)
+      - `docker compose up -d db`
+      - `docker compose up -d backend`
+      - (Optional UI proxy) `docker compose up -d web`
+      - Health check:
+        - Backend direct: `curl http://localhost:8000/api/health`
+        - Via web proxy: `curl http://localhost:8080/api/health`
+      - Verify version: `curl http://localhost:8000/api/version`
+      - Login as default owner and persist cookie:
+        - `curl -s -X POST -H 'Content-Type: application/json' -c cookies.txt -d '{"username":"owner","password":"owner"}' http://localhost:8000/api/auth/login`
+        - `curl -b cookies.txt http://localhost:8000/api/auth/me`
+      - Create admin and viewer (owner session):
+        - `curl -b cookies.txt -H 'Content-Type: application/json' -d '{"username":"admin","password":"secret","role":"admin"}' http://localhost:8000/api/users`
+        - `curl -b cookies.txt -H 'Content-Type: application/json' -d '{"username":"viewer","password":"secret","role":"viewer"}' http://localhost:8000/api/users`
+      - List users (owner/admin): `curl -b cookies.txt http://localhost:8000/api/users`
+      - Logout: `curl -b cookies.txt -X POST http://localhost:8000/api/auth/logout`
+      - Viewer checks:
+        - Login: `curl -s -X POST -H 'Content-Type: application/json' -c cookies.txt -d '{"username":"viewer","password":"secret"}' http://localhost:8000/api/auth/login`
+        - Forbidden list: `curl -i -b cookies.txt http://localhost:8000/api/users` (expect 403)
+        - Update self: `curl -b cookies.txt -H 'Content-Type: application/json' -X PATCH http://localhost:8000/api/users/<viewer_id> -d '{"password":"newpass"}'`
+      - Admin checks:
+        - Login: `curl -s -X POST -H 'Content-Type: application/json' -c cookies.txt -d '{"username":"admin","password":"secret"}' http://localhost:8000/api/auth/login`
+        - Delete viewer: `curl -i -b cookies.txt -X DELETE http://localhost:8000/api/users/<viewer_id>` (expect 204)
+        - Delete owner (blocked): `curl -i -b cookies.txt -X DELETE http://localhost:8000/api/users/1` (expect 400)
+    - Option B: Run backend locally
+      - In `backend/`: `uv run alembic upgrade head`
+      - Start: `uv run uvicorn ddms.main:app --host 0.0.0.0 --port 8000 --reload`
+      - Use the same curl steps against `http://localhost:8000`
+
+    **Run Tests**
+    - Backend tests: `cd backend && uv run pytest -q`
+
+    **Notes**
+    - Default owner credentials are `owner` / `owner` (configurable via `DDMS_OWNER_DEFAULT_USERNAME` and `DDMS_OWNER_DEFAULT_PASSWORD`).
+    - JWT is set in an HttpOnly cookie `ddms_auth` with SameSite=Strict; `Secure` is on for non-development envs.
+    - docker-compose backend healthcheck currently probes `/health`; our API exposes `/api/health`. You may want to update the healthcheck path for accurate status.
+
+    Would you like me to commit these changes? If yes, I’ll use your commit format. Please provide the next sequence number, or I can pick one, e.g.:
+    - 12-test(auth): add integration tests for JWT auth and RBAC
+    - 13-feat(auth): users model, routes, owner bootstrap
+  timestamp: '2025-10-13T12:07:31Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
