@@ -1,0 +1,111 @@
+schema: tigs.chat/v1
+messages:
+- role: assistant
+  content: |
+    Perfect! Created **`specs/dev/architecture.md`** ✅
+
+    ## What It Solves
+
+    This document would have prevented our confusion about:
+
+    1. **Port conflicts** → Clearly documents why 8001/8081/5433 (vs codex's 8000/8080/5432)
+    2. **Container naming** → Explains `claude-*` prefix (vs codex's `ddms-*`)
+    3. **Endpoint structure** → Shows all endpoints under `/api/` prefix with rationale
+    4. **Access patterns** → Clarifies when to use direct (8001) vs Nginx (8081)
+    5. **Environment variables** → Documents `DDMS_` prefix convention
+
+    ## Structure
+
+    ```
+    specs/dev/
+    ├── general.md        # Commit conventions, tools
+    ├── structure.md      # Project file organization
+    ├── roadmap.md        # Iteration plan & acceptance
+    ├── testing.md        # Testing standards
+    └── architecture.md   # ← NEW: Docker services, ports, API structure
+    ```
+
+    ## Key Principles Documented
+
+    1. **Coexistence** - Can run alongside codex project
+    2. **Consistency** - All API endpoints under `/api/`
+    3. **Clarity** - Visual diagrams showing service connections
+    4. **Context** - "Why" not just "what" for each decision
+
+    ## Minimal & Focused
+
+    - **Service overview** - Quick visual reference
+    - **Naming** - Container and env var conventions
+    - **Ports** - Mapping table with conflict notes
+    - **API structure** - Endpoint layout with rationale
+    - **Access patterns** - When to use which URL
+    - **References** - Links to detailed docs
+
+    This would have saved us from the back-and-forth about ports, container names, and endpoint structure!
+
+    Ready to add it to the commit?
+  timestamp: '2025-10-13T09:15:54Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
+- role: user
+  content: |
+    It is too complex and detailed. I want specs. You don't need to include every information. If some information can be easily got from the repo, there is no need to explain in the spec.
+  timestamp: '2025-10-13T09:23:08Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
+- role: assistant
+  content: |
+    Much better! ✅ **44 lines vs 140+ before**
+
+    ## What It Captures (Specs Only)
+
+    1. **Architecture**: 3-tier stack (what each does)
+    2. **Naming decisions**: `claude-*` containers, `DDMS_*` env vars, `/api/*` endpoints - with WHY
+    3. **Port choices**: 8001/8081/5433 - with WHY (codex conflicts)
+    4. **Dev vs Prod principle**: Backend exposure philosophy
+
+    ## What It Doesn't Include (Found Elsewhere)
+
+    - ❌ Exact endpoint URLs → see code
+    - ❌ Docker commands → see DEV_GUIDE.md
+    - ❌ Health check syntax → see docker-compose.yml
+    - ❌ Access patterns → see DEV_GUIDE.md
+    - ❌ Service diagrams → obvious from docker-compose.yml
+
+    **Principle:** If you can `grep` it or see it in docker-compose.yml, it's not a spec decision.
+
+    Ready to commit this?
+  timestamp: '2025-10-13T09:23:41Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
+- role: assistant
+  content: |
+    ## Final Version - Key Changes
+
+    **What I kept from your version:** ✅
+    - Better service descriptions (React SPA, proxies `/api` + `/ws`)
+    - TimescaleDB version specificity
+    - Production section improvements
+
+    **What I fixed:** 🔧
+    1. **Port numbers**: Corrected to 8001/8081/5433 (not 8000/8080/5432)
+    2. **Container naming**: Restored - critical for avoiding conflicts
+    3. **Port rationale**: Added explicit note about codex using 8000/8080/5432
+
+    **What I removed (too detailed for spec):** ❌
+    - Specific endpoint responses (`{"status":"ok","env":"development"}`)
+    - Uvicorn command syntax
+    - Health/readiness check details
+
+    **Result:** 46 lines, spec-level decisions only, no duplication with code/configs.
+
+    Ready to commit?
+  timestamp: '2025-10-13T09:45:25Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
+- role: user
+  content: |
+    The port numbers are not about architecture. Can we decouple the file with port numbers?
+  timestamp: '2025-10-13T09:49:33Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
+- role: assistant
+  content: |
+    You're absolutely right - port numbers are configuration, not architecture. Let me rewrite focusing only on structural decisions:
+  timestamp: '2025-10-13T09:49:45Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
