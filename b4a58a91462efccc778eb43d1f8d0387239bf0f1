@@ -1,0 +1,418 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    Review docker-compose.yml and ../../ddms-codex/codex/docker-compose.yml. Any architectural difference? If so, which is best practice?
+  timestamp: '2025-10-12T13:48:44Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
+- role: assistant
+  content: |
+    Perfect! Now I can see the complete picture. Here's the architectural comparison:
+
+    ## Architecture Comparison
+
+    ### **ddms-codex** (Production-First)
+    ```
+    User Request (port 8080)
+        ↓
+    ┌─────────────────────────┐
+    │   Nginx (web service)   │
+    │   Single Entry Point    │
+    ├─────────────────────────┤
+    │ / → React Frontend      │
+    │ /api/ → Backend:8000 ← proxy
+    │ /ws/ → Backend:8000 ← proxy
+    └─────────────────────────┘
+             ↓
+       Backend (internal only)
+       Not exposed to host
+    ```
+
+    **Access:**
+    - Frontend: `http://localhost:8080/`
+    - API: `http://localhost:8080/api/health` (proxied through Nginx)
+    - Backend port 8000 is NOT exposed to host
+
+    ### **ddms-claude** (Development-First)
+    ```
+    User Request
+        ↓
+    ┌──────────────────┐  ┌──────────────────┐
+    │ Nginx (port 80)  │  │ Backend (8000)   │
+    │ Frontend service │  │ Direct access    │
+    ├──────────────────┤  └──────────────────┘
+    │ / → React        │         ↑
+    │ /api → proxy ────┼─────────┘
+    │ /ws → proxy ─────┼─────────┘
+    └──────────────────┘
+    ```
+
+    **Access:**
+    - Frontend: `http://localhost:80/`
+    - API (through Nginx): `http://localhost/api/health`
+    - API (direct): `http://localhost:8000/health` ✅ **Also works!**
+    - Backend port 8000 IS exposed to host
+
+    ---
+
+    ## Key Differences
+
+    | Aspect | ddms-codex | ddms-claude |
+    |--------|------------|-------------|
+    | **Entry points** | Single (8080) | Dual (80 + 8000) |
+    | **Backend access** | Only through Nginx | Direct + proxied |
+    | **Production-ready** | Yes | No (needs adjustment) |
+    | **Development-friendly** | Less | More |
+    | **Port conflicts** | Possible (8080) | DB on 5433 to avoid conflicts |
+    | **Health endpoint** | `/api/health` through Nginx | Both `/health` direct and `/api/health` proxied |
+    | **Security** | Better (backend isolated) | Weaker (backend exposed) |
+
+    ---
+
+    ## Which is Best Practice?
+
+    **It depends on the use case:**
+
+    ### **For Production: codex approach is better** ✅
+    ```yaml
+    # Backend NOT exposed to host
+    backend:
+      ports: []  # No direct access
+
+    web:
+      ports:
+        - "8080:80"  # Single entry point
+    ```
+
+    **Advantages:**
+    - ✅ Single entry point (easier to secure, firewall, rate-limit)
+    - ✅ Backend isolated (can't bypass Nginx)
+    - ✅ Consistent URLs (all requests go through same domain/port)
+    - ✅ CORS simplified (same origin)
+    - ✅ SSL/TLS termination at Nginx
+    - ✅ Can add auth middleware at Nginx level
+
+    ### **For Development: claude approach is useful** ⚙️
+    ```yaml
+    # Backend exposed for direct testing
+    backend:
+      ports:
+        - "8000:8000"  # Direct access
+    ```
+
+    **Advantages:**
+    - ✅ Can curl backend directly for debugging
+    - ✅ Faster iteration (no Nginx cache/buffering)
+    - ✅ Can test backend independently
+    - ✅ OpenAPI docs at http://localhost:8000/docs
+    - ✅ Easier to use API testing tools (Postman, Insomnia)
+
+    ---
+
+    ## Recommendation for DDMS
+
+    **Use a hybrid approach with environment-specific configs:**
+
+    ### **Development** (current claude setup is fine):
+    - Expose backend on 8000 for direct testing
+    - Frontend on 80 with proxy configured
+    - Both access methods work
+
+    ### **Production** (should match codex):
+    - Remove backend port exposure
+    - Single entry through Nginx on port 80 (or 8080)
+    - All requests go through `/api/` proxy
+
+    **My updated manual verification should be:**
+
+    ```bash
+    # Development testing (both work):
+    curl http://localhost:8000/health          # Direct backend access
+    curl http://localhost/api/health           # Through Nginx proxy
+
+    # Production testing (only this works):
+    curl http://localhost:8080/api/health      # Through Nginx proxy only
+    ```
+
+    ---
+
+    ## Should we update docker-compose.yml?
+
+    **For Iteration 0 (baseline hardening), the current setup is acceptable** because:
+    - We're in development phase
+    - Direct backend access is useful for testing
+    - Frontend isn't fully implemented yet
+
+    **However, we should:**
+    1. Add a **production docker-compose** (e.g., `docker-compose.prod.yml`) matching codex architecture
+    2. Update manual verification to test **both** direct and proxied access
+    3. Document which approach to use when
+
+    Would you like me to create a production-ready docker-compose configuration following the codex pattern?
+  timestamp: '2025-10-12T13:50:13Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
+- role: assistant
+  content: |
+    Perfect! ✅ All changes completed. Here's what we've accomplished:
+
+    ## Summary of Architecture Updates
+
+    ### 1. **Production-Ready Docker Compose** (`docker-compose.yml`)
+    - ✅ Backend port **NOT exposed** to host (security best practice)
+    - ✅ Only Nginx on port 8080 exposed (single entry point)
+    - ✅ Production environment settings
+    - ✅ No volume mounts (use built image)
+    - ✅ No `--reload` flag (production command from Dockerfile)
+
+    ### 2. **Development Overrides** (`docker-compose.dev.yml`)
+    ```bash
+    # Use this for local development
+    docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+    ```
+    - ✅ Backend exposed on port 8000 for direct testing
+    - ✅ Database exposed on port 5433 for tools (pgAdmin, DBeaver)
+    - ✅ Hot reload enabled
+    - ✅ Volume mounts for live code changes
+
+    ### 3. **Configuration Updates**
+    - ✅ Environment variables use `DDMS_` prefix (matching codex)
+    - ✅ Changed `environment` → `env` field name
+    - ✅ Updated all references in health.py and main.py
+
+    ### 4. **Documentation Created**
+    - ✅ `DEV_GUIDE.md` - Complete development workflows
+    - ✅ `MANUAL_VERIFICATION.md` - Step-by-step verification instructions
+
+    ---
+
+    ## Access Patterns
+
+    ### Production Mode (Default)
+    ```bash
+    docker compose up -d
+
+    # Access:
+    ✅ Frontend + API: http://localhost:8080
+    ✅ API Health: http://localhost:8080/api/health
+    ✅ API Docs: http://localhost:8080/docs
+    ❌ Backend: http://localhost:8000 (connection refused - expected!)
+    ```
+
+    ### Development Mode
+    ```bash
+    docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+    # Access:
+    ✅ Backend Direct: http://localhost:8000
+    ✅ API Docs: http://localhost:8000/docs
+    ✅ Database: localhost:5433
+    ✅ Nginx: http://localhost:8080
+    ```
+
+    ### Local Backend Development (Fastest)
+    ```bash
+    docker compose up -d db  # Only database
+    cd backend && source .venv/bin/activate
+    uvicorn ddms.main:app --reload
+
+    # Access:
+    ✅ Backend: http://localhost:8000
+    ✅ Full IDE integration, breakpoints, instant reload
+    ```
+
+    ---
+
+    ## Current Test Results
+
+    ```bash
+    ✅ All 6 tests passing
+    ✅ Backend healthy in Docker
+    ✅ Port 8000 NOT exposed (production security ✓)
+    ✅ Port 8080 serves API through Nginx
+    ✅ Health checks working
+    ✅ Configuration using DDMS_ prefix
+    ```
+
+    ---
+
+    ## Next Steps
+
+    Ready to commit these changes? The updates include:
+    - docker-compose.yml (production-ready)
+    - docker-compose.dev.yml (new dev overrides)
+    - ddms/core/config.py (DDMS_ prefix, env field)
+    - ddms/api/health.py (env field)
+    - ddms/main.py (env field)
+    - DEV_GUIDE.md (new)
+    - MANUAL_VERIFICATION.md (new)
+  timestamp: '2025-10-12T16:02:21Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
+- role: user
+  content: |
+    Alas, it is messy. I revoke my decisions. Let's just keep ONE docker file that is most convenient for dev. We will make another production-ready one in a later interation.
+  timestamp: '2025-10-13T07:57:36Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
+- role: assistant
+  content: |
+    Perfect! Much cleaner now. Here's the simplified setup:
+
+    ## Summary
+
+    ### ✅ ONE Development-Friendly docker-compose.yml
+
+    ```yaml
+    services:
+      backend:
+        ports: ["8000:8000"]      # Direct access
+        environment:
+          - DDMS_ENV=development
+          - DDMS_DEBUG=true
+        volumes: ["./backend:/app"] # Hot reload
+        command: uvicorn --reload
+
+      db:
+        ports: ["5433:5432"]       # For database tools
+
+      web:
+        ports: ["8080:80"]         # Nginx
+    ```
+
+    ### 📝 Updated Documentation
+
+    1. **MANUAL_VERIFICATION.md** - Simple, straightforward verification steps
+    2. **DEV_GUIDE.md** - Removed production/dev confusion
+    3. **roadmap.md** - Clear test expectations
+
+    ### 🎯 Access Points
+
+    - Backend: http://localhost:8000
+    - API Docs: http://localhost:8000/docs
+    - Nginx: http://localhost:8080
+    - Database: localhost:5433
+
+    ### 🚀 What We'll Do Later
+
+    Production hardening (Iteration 8) will address:
+    - Separate production docker-compose configuration
+    - Backend not exposed to host
+    - Production environment settings
+    - No hot reload
+
+    ---
+
+    Ready to commit these changes?
+  timestamp: '2025-10-13T07:59:49Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
+- role: user
+  content: |
+    What's the minimal manual verification that should go into roadmap.md?
+  timestamp: '2025-10-13T08:02:24Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
+- role: assistant
+  content: |
+    Perfect! Here's the principle:
+
+    ## Roadmap.md = **Essential Smoke Tests Only**
+
+    **4 minimal checks** that prove Iteration 0 is complete:
+
+    1. ✅ **Health endpoint** → Backend responding
+    2. ✅ **API docs** → FastAPI configured
+    3. ✅ **Migrations** → Database setup working
+    4. ✅ **Services healthy** → Docker orchestration working
+
+    **Everything else** (detailed API testing, coverage checks, code quality, browser testing, etc.) belongs in:
+    - `MANUAL_VERIFICATION.md` - Comprehensive verification checklist
+    - `DEV_GUIDE.md` - Development workflows and debugging
+
+    This keeps the roadmap clean and focused on **acceptance criteria**, not detailed test procedures.
+
+    Ready to commit?
+  timestamp: '2025-10-13T08:02:51Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
+- role: user
+  content: |
+    No, we don't need version in api/health. Do you think the optional backend check meaningful or covered by API check?
+  timestamp: '2025-10-13T08:09:07Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
+- role: assistant
+  content: |
+    Great catch! You're absolutely right. Looking at our setup:
+
+    - `/health` → returns `{status, env, version}`
+    - `/api/health` → returns `{status, env}`
+
+    They're **almost identical** and serve the same purpose. The only difference is version.
+
+    **Current usage:**
+    - Docker healthcheck uses `/api/health` (not `/health`)
+    - Manual verification tests `/api/health` through Nginx
+    - `/health` is not actually used anywhere!
+
+    **Options:**
+
+    1. **Remove `/health` entirely** - Keep only `/api/health` and `/api/version`
+       - Simpler, less redundant
+       - One clear health check endpoint
+
+    2. **Keep `/health` as lightweight check** - Use it for Docker healthcheck
+       - `/health` → `{status: "ok"}` (minimal, fast)
+       - `/api/health` → `{status, env}` (full info)
+       - Docker healthcheck uses `/health` instead of `/api/health`
+
+    3. **Current state** - Both exist but redundant
+
+    What do you prefer? I'd suggest **option 1** (remove `/health`) since we already have `/api/health` working everywhere.
+  timestamp: '2025-10-13T08:13:38Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
+- role: user
+  content: |
+    Go with option 1 and make sure ports are not conflicting with Codex's run.
+  timestamp: '2025-10-13T08:20:03Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
+- role: assistant
+  content: |
+    Perfect! ✅ **All API endpoints now consistently under `/api/` prefix**
+
+    ## Changes Applied
+
+    ### API Documentation URLs Updated
+    - ❌ `/docs` → ✅ `/api/docs`
+    - ❌ `/redoc` → ✅ `/api/redoc`
+    - ❌ `/openapi.json` → ✅ `/api/openapi.json`
+
+    ### Benefits (learned from Codex)
+    1. **Consistent routing** - All API-related endpoints under `/api/`
+    2. **Cleaner organization** - Clear separation between API and other routes
+    3. **Better convention** - Matches REST API best practices
+
+    ### Verification
+    ```bash
+    # Old URLs return 404
+    curl http://localhost:8001/docs → 404 ✅
+
+    # New URLs work perfectly
+    curl http://localhost:8001/api/docs → Swagger UI ✅
+    curl http://localhost:8081/api/docs → Swagger UI (through Nginx) ✅
+    curl http://localhost:8001/api/openapi.json → OpenAPI schema ✅
+    ```
+
+    ### All Endpoints Now Under `/api/`
+    - `/api/health` ✅
+    - `/api/version` ✅
+    - `/api/docs` ✅
+    - `/api/redoc` ✅
+    - `/api/openapi.json` ✅
+
+    **Updated documentation:**
+    - `specs/dev/roadmap.md` - acceptance criteria includes `/api/docs`
+    - `MANUAL_VERIFICATION.md` - all URLs updated
+    - `DEV_GUIDE.md` - all URLs updated
+
+    ---
+
+    **Services ready for your manual verification!** 🚀
+    - API Docs: http://localhost:8081/api/docs
+    - Backend: http://localhost:8001/api/health
+  timestamp: '2025-10-13T08:35:59Z'
+  log_uri: 'claude-code:0c83853e-76a7-4206-8d54-385fb42935b0.jsonl'
