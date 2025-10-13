@@ -16,10 +16,6 @@ def create_app() -> FastAPI:
     # Include API routes under the /api prefix
     app.include_router(api_router, prefix="/api")
 
-    @app.get("/health")
-    def health() -> dict[str, str]:  # pragma: no cover - trivial
-        return {"status": "ok", "env": settings.env, "version": __version__}
-
     return app
 
 
