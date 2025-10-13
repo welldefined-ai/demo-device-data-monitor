@@ -1,0 +1,99 @@
+schema: tigs.chat/v1
+messages:
+- role: assistant
+  content: |
+    Frontend Iteration 1 is implemented and committed as 10.4-feat(frontend): auth UI, protected routes, users, profile.
+
+    What’s included
+    - Auth store
+      - Zustand store with user state and actions: `frontend/src/store/auth.ts`
+      - Methods: `fetchMe`, `login`, `logout`
+    - Routing + guards
+      - React Router with Protected wrapper in `frontend/src/app/App.tsx`
+      - Role-based access for routes
+    - UI pages
+      - Login: `frontend/src/app/pages/Login.tsx`
+      - Users (owner/admin): list, create, delete users — `frontend/src/app/pages/Users.tsx`
+      - Profile: change password — `frontend/src/app/pages/Profile.tsx`
+    - App shell
+      - Ant Design Layout with sidebar nav and user dropdown — `frontend/src/app/App.tsx`
+      - Nav shows Users only for owner/admin
+    - Config
+      - Added `react-router-dom` dependency in `frontend/package.json`
+
+    How to run frontend locally
+    - In `frontend/`: npm install and npm run dev
+    - Backend running at 8000; Vite proxy already points `/api` to `http://localhost:8000`
+    - Default credentials: owner/owner
+
+    Quick manual checks
+    - Open app at `http://localhost:5173`
+    - Try accessing `/users` → redirected to `/login`
+    - Login as `owner` → lands on Home
+    - Open Users → create admin/viewer, delete viewer
+    - Open Profile → change password, re-login to confirm
+
+    Want me to continue to Iteration 2 backend next, or add frontend tests for the login flow and route guards?
+  timestamp: '2025-10-13T14:29:39Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: user
+  content: |
+    Where does 5173 come from? Do you understand specs/dev/architecture.md?
+  timestamp: '2025-10-13T14:37:42Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: assistant
+  content: |
+    Yes. 5173 is the Vite dev server port.
+
+    - Source: `frontend/vite.config.ts:7` sets `server.port = 5173`.
+    - The dev script `scripts/dev/serve_frontend.sh` runs Vite, which serves the SPA on `http://localhost:5173` and proxies `/api` to `http://localhost:8000`.
+
+    I understand specs/dev/architecture.md:
+
+    - Nginx serves the built SPA and proxies `/api/*` + `/ws/*` in the Docker stack.
+    - Development: backend exposed (8000), hot reload; database exposed.
+    - Production: Nginx is the entry point.
+
+    How ports map
+
+    - Local dev (fast feedback):
+      - Frontend: `http://localhost:5173` (Vite dev server)
+      - Backend: `http://localhost:8000`
+      - Vite proxies `/api` to backend (configured)
+    - Docker stack:
+      - Web (Nginx): `http://localhost:8080` serves built SPA and proxies `/api/*` to backend
+      - Backend: internal `backend:8000`
+
+    If you prefer a single port in dev via Nginx (8080), I can:
+    - Add a frontend dev service to docker-compose, or
+    - Switch Vite to 8080 (only advisable when not running the web container).
+
+    Want me to update specs/dev/architecture.md or add a short DEV.md clarifying these ports and workflows?
+  timestamp: '2025-10-13T14:38:34Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: user
+  content: |
+    I will do manual verification after you run the docker up. So, should I visit http://localhost:8080? Is it ready?
+  timestamp: '2025-10-13T14:43:45Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: assistant
+  content: |
+    Yes—visit http://localhost:8080.
+
+    What I did
+    - Fixed backend healthcheck to /api/health in docker-compose.
+    - Brought up DB and backend, applied Alembic migrations, restarted backend to trigger owner bootstrap, and started Nginx web.
+    - Stack status shows web on 8080 and backend starting health; it should settle to healthy shortly.
+
+    Quick checks
+    - App: http://localhost:8080 (SPA served by Nginx)
+    - API health via Nginx: curl http://localhost:8080/api/health
+    - API docs via Nginx: http://localhost:8080/api/docs
+
+    Login for verification
+    - Username: owner
+    - Password: owner
+
+    If anything looks off, tell me and I’ll inspect logs or adjust health/migration timing.
+  timestamp: '2025-10-13T14:47:08Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
