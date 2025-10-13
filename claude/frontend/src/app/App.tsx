@@ -1,88 +1,55 @@
-import { ConfigProvider, Typography, Space, Button, Card, Tag } from 'antd'
-import { CheckCircleOutlined } from '@ant-design/icons'
-import { useEffect, useState } from 'react'
+/**
+ * Main application component with routing
+ */
 
-const { Title, Paragraph } = Typography
-
-interface HealthStatus {
-  status: string
-  message?: string
-}
+import { useEffect } from 'react';
+import { ConfigProvider } from 'antd';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { LoginPage } from '../features/auth/LoginPage';
+import { DashboardPage } from '../features/dashboard/DashboardPage';
+import { UsersPage } from '../features/users/UsersPage';
+import { ProfilePage } from '../features/profile/ProfilePage';
+import { ProtectedRoute } from '../components/ProtectedRoute';
+import { AppLayout } from '../components/AppLayout';
+import { useAuthStore } from '../store/authStore';
 
 function App() {
-  const [health, setHealth] = useState<HealthStatus | null>(null)
-  const [loading, setLoading] = useState(false)
+  const { checkAuth } = useAuthStore();
 
-  const checkHealth = async () => {
-    setLoading(true)
-    try {
-      const response = await fetch('/api/health')
-      const data = await response.json()
-      setHealth(data)
-    } catch (error) {
-      setHealth({ status: 'error', message: 'Failed to connect to backend' })
-    } finally {
-      setLoading(false)
-    }
-  }
-
+  // Check authentication status on app mount
   useEffect(() => {
-    checkHealth()
-  }, [])
+    checkAuth();
+  }, [checkAuth]);
 
   return (
     <ConfigProvider>
-      <div style={{ padding: '50px', maxWidth: '800px', margin: '0 auto' }}>
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <Title level={1}>DDMS - Distributed Device Monitoring System</Title>
+      <BrowserRouter>
+        <Routes>
+          {/* Public route */}
+          <Route path="/login" element={<LoginPage />} />
 
-          <Card title="Framework Status">
-            <Space direction="vertical" size="middle">
-              <div>
-                <Tag color="green" icon={<CheckCircleOutlined />}>
-                  Frontend Running
-                </Tag>
-                <Paragraph style={{ marginTop: 8 }}>
-                  React + TypeScript + Vite + Ant Design
-                </Paragraph>
-              </div>
+          {/* Protected routes with app layout */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppLayout />}>
+              {/* Dashboard - accessible to all authenticated users */}
+              <Route path="/" element={<DashboardPage />} />
 
-              <div>
-                {health?.status === 'healthy' ? (
-                  <Tag color="green" icon={<CheckCircleOutlined />}>
-                    Backend Connected
-                  </Tag>
-                ) : (
-                  <Tag color="red">Backend Disconnected</Tag>
-                )}
-                <Paragraph style={{ marginTop: 8 }}>
-                  {health?.status === 'healthy'
-                    ? 'FastAPI backend is responding'
-                    : health?.message || 'Checking...'}
-                </Paragraph>
-              </div>
+              {/* Profile - accessible to all authenticated users */}
+              <Route path="/profile" element={<ProfilePage />} />
 
-              <Button onClick={checkHealth} loading={loading}>
-                Refresh Status
-              </Button>
-            </Space>
-          </Card>
+              {/* User management - only admin and owner */}
+              <Route element={<ProtectedRoute requiredRole={['owner', 'admin']} />}>
+                <Route path="/users" element={<UsersPage />} />
+              </Route>
+            </Route>
+          </Route>
 
-          <Card title="Next Steps">
-            <Paragraph>
-              The framework is set up and ready for feature implementation:
-            </Paragraph>
-            <ul>
-              <li>Backend API routes in <code>backend/ddms/api/</code></li>
-              <li>Frontend features in <code>frontend/src/features/</code></li>
-              <li>Database models in <code>backend/ddms/db/</code></li>
-              <li>Run migrations with <code>alembic upgrade head</code></li>
-            </ul>
-          </Card>
-        </Space>
-      </div>
+          {/* Catch all - redirect to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
     </ConfigProvider>
-  )
+  );
 }
 
-export default App
+export default App;
