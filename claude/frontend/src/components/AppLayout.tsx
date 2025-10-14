@@ -102,8 +102,7 @@ export const AppLayout: React.FC = () => {
             selectedKeys={[location.pathname]}
             items={navItems}
             onClick={({ key }) => navigate(key)}
-            style={{ minWidth: 300, border: 'none' }}
-            overflowedIndicator={null}
+            style={{ flex: 1, border: 'none' }}
           />
         </div>
 
