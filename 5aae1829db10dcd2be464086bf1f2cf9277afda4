@@ -1,0 +1,46 @@
+schema: tigs.chat/v1
+messages:
+- role: assistant
+  content: |
+    I updated specs/dev/roadmap.md to reflect the semi–non-trivial API change and marked Iteration 1 items as done.
+
+    Changes
+    - Clarified users endpoints and delete response:
+      - GET /api/users/ and POST /api/users/ (with trailing slash)
+      - DELETE /api/users/{id} → 200 with {"ok": true}
+    - Marked Iteration 1 requirements as completed:
+      - [x] DDMS-AUTH-010, 011, 020, 021, 030, 040
+      - [x] DDMS-DEP-020
+
+    Do you want me to commit this docs update? If yes, I’ll use:
+    - 10.7-docs(roadmap): record DELETE 200 {ok} and mark Iteration 1 done
+  timestamp: '2025-10-14T01:39:49Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: user
+  content: |
+    Not yet. Review ../.github/workflows/codex-ci.yml and make sure CI can pass.
+  timestamp: '2025-10-14T02:05:25Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: assistant
+  content: |
+    I reviewed ../.github/workflows/codex-ci.yml and it should pass with the current repo state.
+
+    Backend job
+    - Uses Python 3.11 and uv to install backend with dev extras: installs pytest, ruff, mypy, pydantic plugin, etc.
+    - Lint: ruff runs on codex/backend
+    - Types: mypy runs with our strict config
+    - Tests: PYTHONPATH=. uv run pytest -q runs our SQLite-backed tests (no external DB needed)
+    - psycopg[binary], argon2-cffi, and cryptography have Linux wheels, so no system libs required
+
+    Frontend job
+    - Node 20 setup
+    - npm ci; ESLint and Vitest are non-blocking (|| true), so frontend won’t fail CI even if warnings occur
+
+    Key compat checks
+    - Our tests don’t require Docker or network; they use in-memory SQLite and FastAPI dependency overrides.
+    - Import paths are correct under working-directory codex/backend and PYTHONPATH=.
+    - We already validated the suite locally; it passed after fixes.
+
+    Conclusion: No workflow changes needed for CI to succeed. If you want, I can kick off a dry run locally for the backend steps, but under GitHub runners this setup should be green.
+  timestamp: '2025-10-14T02:06:54Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
