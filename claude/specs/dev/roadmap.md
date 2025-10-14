@@ -319,29 +319,31 @@ This roadmap sequences implementation work into clear iterations, each with deli
 
 **Backend**:
 
-- `GET /api/groups/{id}/overview` - Group details with device list
-- `GET /api/groups/{id}/readings/current` - Current readings for all devices in group
-- `GET /api/groups/{id}/readings/history?start=<iso8601>&end=<iso8601>` - Historical data for group devices
+- `GET /api/groups/{id}/overview` - Group details with device list and latest readings
 
 **Frontend**:
 
-- Group dashboard page with device selection
-- Live monitoring view showing all devices in group simultaneously
-- Historical view with multi-device overlay chart
-- Group selector in navigation
+- Group tabs on Dashboard page (filter devices by group)
+- Group tabs on History page (auto-select group devices)
+- GroupDashboardPage (optional dedicated view, reuses DeviceCard components)
+- Default group auto-created with all devices assigned
+
+Note: Leverages existing multi-device components from Iterations 4 & 5.
+No separate group endpoints needed - tabs filter existing views.
 
 ### Acceptance
 
 **Manual Verification**:
 
-- Create group and assign multiple devices
-- Navigate to group dashboard
-- Verify all group devices displayed in live view
-- Check that charts update in real-time for all devices
-- Switch to historical view
-- Verify multi-device chart shows all trends overlaid
-- Remove device from group, verify it disappears from dashboard
-- Delete group, verify devices remain in system
+- Navigate to Dashboard, verify "All Devices" and "All Sensors" tabs
+- Click "All Sensors" tab, verify only group devices shown
+- Create new group and assign devices
+- Refresh Dashboard, verify new group tab appears
+- Click new group tab, verify filtered devices
+- Navigate to History, verify group tabs present
+- Click group tab, verify devices auto-selected
+- Remove device from group via Groups page
+- Return to Dashboard/History, verify device removed from group tab
 
 **Requirements**:
 
