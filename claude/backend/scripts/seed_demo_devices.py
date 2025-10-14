@@ -8,11 +8,11 @@ from sqlalchemy import select
 
 from ddms.core.config import settings
 from ddms.db.base import async_session_maker
-from ddms.db.models import Device
+from ddms.db.models import Device, Group, GroupDevice
 
 
 async def seed_demo_devices():
-    """Create 4 demo devices connected to the Modbus simulator."""
+    """Create 4 demo devices and assign them to a default group."""
 
     devices_config = [
         {
@@ -85,7 +85,27 @@ async def seed_demo_devices():
             await session.commit()
             print("Existing devices cleared.")
 
+        # Clear existing groups
+        groups_result = await session.execute(select(Group))
+        existing_groups = groups_result.scalars().all()
+        if existing_groups:
+            for group in existing_groups:
+                await session.delete(group)
+            await session.commit()
+            print("Existing groups cleared.")
+
+        # Create default group
+        default_group = Group(
+            name="All Sensors",
+            description="Default group containing all monitoring devices",
+        )
+        session.add(default_group)
+        await session.commit()
+        await session.refresh(default_group)
+        print(f"Created default group: {default_group.name} (id={default_group.id})")
+
         # Create demo devices
+        created_devices = []
         for device_cfg in devices_config:
             device = Device(
                 name=device_cfg["name"],
@@ -97,10 +117,22 @@ async def seed_demo_devices():
                 status="offline",
             )
             session.add(device)
+            created_devices.append(device_cfg)
             print(f"Created: {device_cfg['name']} ({device_cfg['unit']})")
 
         await session.commit()
+
+        # Assign all devices to default group
+        devices_result = await session.execute(select(Device))
+        all_devices = devices_result.scalars().all()
+
+        for device in all_devices:
+            assignment = GroupDevice(group_id=default_group.id, device_id=device.id)
+            session.add(assignment)
+
+        await session.commit()
         print(f"\n✅ Successfully seeded {len(devices_config)} demo devices!")
+        print(f"✅ All devices assigned to '{default_group.name}' group")
         print("Restart backend to start polling: docker compose restart backend")
 
 
