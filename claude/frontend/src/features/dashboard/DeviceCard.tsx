@@ -3,11 +3,11 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Card, Typography, Tag, Statistic, Space } from 'antd';
+import { Card, Typography, Tag, Space } from 'antd';
 import ReactECharts from 'echarts-for-react';
 import { Device, getErrorMessage } from '../../lib/api';
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 
 interface DeviceReading {
   device_id: number;
@@ -46,19 +46,24 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 10000); // Refresh every 10s
+    const interval = setInterval(fetchData, 2000); // Refresh every 2s (aligned with readings)
     return () => clearInterval(interval);
   }, [device.id]);
 
-  const getStatusColor = () => {
+  const getConnectionStatusColor = () => {
+    const status = reading?.status || device.status;
+    return status === 'online' ? 'success' : 'default';
+  };
+
+  const getValueColor = () => {
     const value = reading?.value ?? 0;
     const thresholds = device.thresholds;
 
-    if (!thresholds) return 'default';
+    if (!thresholds) return '#000';
 
-    if (thresholds.critical && value >= thresholds.critical) return 'error';
-    if (thresholds.warning && value >= thresholds.warning) return 'warning';
-    return 'success';
+    if (thresholds.critical && value >= thresholds.critical) return '#ff4d4f'; // Red
+    if (thresholds.warning && value >= thresholds.warning) return '#faad14'; // Yellow
+    return '#52c41a'; // Green
   };
 
   const getGaugeOption = () => {
@@ -123,22 +128,70 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
   };
 
   const getTrendOption = () => {
+    const thresholds = device.thresholds;
+    const maxValue = Math.max(...historicalData.map(d => d.value), thresholds?.critical || 100);
+
+    // Create threshold markLines and background visualMap
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const markLine: any = {
+      data: [],
+      symbol: 'none',
+      label: { show: true, position: 'end', fontSize: 10 },
+    };
+
+    if (thresholds?.warning) {
+      markLine.data.push({
+        yAxis: thresholds.warning,
+        lineStyle: { color: '#faad14', width: 2, type: 'dashed' },
+        label: { formatter: 'Warning' },
+      });
+    }
+
+    if (thresholds?.critical) {
+      markLine.data.push({
+        yAxis: thresholds.critical,
+        lineStyle: { color: '#ff4d4f', width: 2, type: 'dashed' },
+        label: { formatter: 'Critical' },
+      });
+    }
+
     return {
       grid: {
-        left: 40,
-        right: 10,
-        top: 10,
-        bottom: 30,
+        left: 45,
+        right: 15,
+        top: 20,
+        bottom: 40,
       },
       xAxis: {
         type: 'category',
         data: historicalData.map(d => d.timestamp),
-        axisLabel: { fontSize: 10, rotate: 45 },
+        axisLabel: {
+          fontSize: 10,
+          rotate: 30,
+          interval: Math.floor(historicalData.length / 4), // Show every 4th label
+        },
       },
       yAxis: {
         type: 'value',
         axisLabel: { fontSize: 10 },
+        min: 0,
+        max: maxValue * 1.1,
       },
+      visualMap: thresholds
+        ? {
+            show: false,
+            pieces: [
+              { lte: thresholds.warning || 0, color: 'rgba(82, 196, 26, 0.1)' }, // Green
+              {
+                gt: thresholds.warning || 0,
+                lte: thresholds.critical || 0,
+                color: 'rgba(250, 173, 20, 0.1)',
+              }, // Yellow
+              { gt: thresholds.critical || 0, color: 'rgba(255, 77, 79, 0.1)' }, // Red
+            ],
+            dimension: 1,
+          }
+        : undefined,
       series: [
         {
           data: historicalData.map(d => d.value),
@@ -146,6 +199,8 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
           smooth: true,
           lineStyle: { width: 2 },
           itemStyle: { color: '#1890ff' },
+          areaStyle: {},
+          markLine: markLine.data.length > 0 ? markLine : undefined,
         },
       ],
       tooltip: {
@@ -163,19 +218,19 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
       <Space direction="vertical" style={{ width: '100%' }} size="small">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text strong>{device.name}</Text>
-          <Tag color={getStatusColor()}>
+          <Tag color={getConnectionStatusColor()}>
             {reading?.status?.toUpperCase() || device.status.toUpperCase()}
           </Tag>
         </div>
 
-        <Statistic
-          title="Current Value"
-          value={reading?.value ?? '-'}
-          suffix={device.unit}
-          valueStyle={{ fontSize: 24 }}
-        />
+        <div style={{ textAlign: 'center', margin: '8px 0' }}>
+          <Title level={2} style={{ margin: 0, color: getValueColor() }}>
+            {reading?.value ? reading.value.toFixed(1) : '-'}
+          </Title>
+          <Text type="secondary">{device.unit}</Text>
+        </div>
 
-        <Text type="secondary" style={{ fontSize: 12 }}>
+        <Text type="secondary" style={{ fontSize: 12, textAlign: 'center', display: 'block' }}>
           {reading?.timestamp
             ? `Updated: ${new Date(reading.timestamp).toLocaleTimeString()}`
             : 'No data'}
@@ -185,7 +240,7 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
 
         <div>
           <Text type="secondary" style={{ fontSize: 12 }}>Recent Trend</Text>
-          <ReactECharts option={getTrendOption()} style={{ height: '120px' }} />
+          <ReactECharts option={getTrendOption()} style={{ height: '150px' }} />
         </div>
       </Space>
     </Card>

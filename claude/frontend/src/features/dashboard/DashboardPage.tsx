@@ -94,14 +94,16 @@ export const DashboardPage: React.FC = () => {
         Live Monitoring Dashboard
       </Title>
       <Row gutter={[16, 16]}>
-        {devices.map((device) => {
-          const reading = readings.get(device.id);
-          return (
-            <Col key={device.id} xs={24} sm={24} md={12} lg={12} xl={6}>
-              <DeviceCard device={device} reading={reading} />
-            </Col>
-          );
-        })}
+        {devices
+          .sort((a, b) => a.id - b.id)
+          .map((device) => {
+            const reading = readings.get(device.id);
+            return (
+              <Col key={device.id} xs={24} sm={24} md={12} lg={12} xl={6}>
+                <DeviceCard device={device} reading={reading} />
+              </Col>
+            );
+          })}
       </Row>
     </div>
   );
