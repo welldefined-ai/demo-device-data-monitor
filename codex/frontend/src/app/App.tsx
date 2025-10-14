@@ -5,6 +5,8 @@ import { useAuth } from '../store/auth';
 import { LoginPage } from './pages/Login';
 import { UsersPage } from './pages/Users';
 import { ProfilePage } from './pages/Profile';
+import { DevicesPage } from './pages/Devices';
+import { GroupsPage } from './pages/Groups';
 
 const { Header, Sider, Content } = Layout;
 
@@ -43,6 +45,8 @@ function AppShell() {
     ...(user && (user.role === 'owner' || user.role === 'admin')
       ? [{ key: 'users', label: <Link to="/users">Users</Link> }]
       : []),
+    ...(user ? [{ key: 'devices', label: <Link to="/devices">Devices</Link> }] : []),
+    ...(user ? [{ key: 'groups', label: <Link to="/groups">Groups</Link> }] : []),
   ];
 
   const userMenu = {
@@ -80,6 +84,22 @@ function AppShell() {
               element={
                 <Protected roles={["owner", "admin"]}>
                   <UsersPage />
+                </Protected>
+              }
+            />
+            <Route
+              path="/devices"
+              element={
+                <Protected>
+                  <DevicesPage />
+                </Protected>
+              }
+            />
+            <Route
+              path="/groups"
+              element={
+                <Protected>
+                  <GroupsPage />
                 </Protected>
               }
             />
