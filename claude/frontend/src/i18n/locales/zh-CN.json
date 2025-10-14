@@ -108,9 +108,19 @@
     "languagePreference": "语言偏好",
     "delete": "删除",
     "cannotDelete": "无法删除",
-    "viewer": "查看者",
+    "viewer": "普通用户",
     "admin": "管理员",
-    "owner": "所有者"
+    "owner": "超级管理员"
+  },
+  "login": {
+    "title": "DDMS",
+    "subtitle": "设备数据监控系统",
+    "username": "用户名",
+    "password": "密码",
+    "usernameRequired": "请输入用户名！",
+    "passwordRequired": "请输入密码！",
+    "logIn": "登录",
+    "defaultCredentials": "默认账号：admin / admin"
   },
   "profile": {
     "title": "个人设置",

@@ -4,14 +4,16 @@
 
 import React, { useState } from 'react';
 import { Form, Input, Button, Card, message, Typography } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, GlobalOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { authApi, getErrorMessage } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 export const LoginPage: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { checkAuth } = useAuthStore();
@@ -49,13 +51,27 @@ export const LoginPage: React.FC = () => {
         style={{
           width: 400,
           boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          position: 'relative',
         }}
       >
+        <Button
+          type="text"
+          size="small"
+          icon={<GlobalOutlined />}
+          onClick={() => i18n.changeLanguage(i18n.language === 'en-US' ? 'zh-CN' : 'en-US')}
+          style={{
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            fontSize: 12,
+          }}
+        >
+          {i18n.language === 'en-US' ? '中文' : 'EN'}
+        </Button>
+
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Title level={2}>DDMS</Title>
-          <Typography.Text type="secondary">
-            Device Data Monitoring System
-          </Typography.Text>
+          <Title level={2}>{t('login.title')}</Title>
+          <Text type="secondary">{t('login.subtitle')}</Text>
         </div>
 
         <Form
@@ -66,22 +82,22 @@ export const LoginPage: React.FC = () => {
         >
           <Form.Item
             name="username"
-            rules={[{ required: true, message: 'Please input your username!' }]}
+            rules={[{ required: true, message: t('login.usernameRequired') }]}
           >
             <Input
               prefix={<UserOutlined />}
-              placeholder="Username"
+              placeholder={t('login.username')}
               autoComplete="username"
             />
           </Form.Item>
 
           <Form.Item
             name="password"
-            rules={[{ required: true, message: 'Please input your password!' }]}
+            rules={[{ required: true, message: t('login.passwordRequired') }]}
           >
             <Input.Password
               prefix={<LockOutlined />}
-              placeholder="Password"
+              placeholder={t('login.password')}
               autoComplete="current-password"
             />
           </Form.Item>
@@ -94,14 +110,14 @@ export const LoginPage: React.FC = () => {
               block
               style={{ height: 40 }}
             >
-              Log In
+              {t('login.logIn')}
             </Button>
           </Form.Item>
 
           <div style={{ textAlign: 'center' }}>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              Default credentials: admin / admin
-            </Typography.Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {t('login.defaultCredentials')}
+            </Text>
           </div>
         </Form>
       </Card>

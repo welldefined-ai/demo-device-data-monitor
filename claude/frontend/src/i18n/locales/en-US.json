@@ -112,6 +112,16 @@
     "admin": "Admin",
     "owner": "Owner"
   },
+  "login": {
+    "title": "DDMS",
+    "subtitle": "Device Data Monitoring System",
+    "username": "Username",
+    "password": "Password",
+    "usernameRequired": "Please input your username!",
+    "passwordRequired": "Please input your password!",
+    "logIn": "Log In",
+    "defaultCredentials": "Default credentials: admin / admin"
+  },
   "profile": {
     "title": "Profile Settings",
     "username": "Username",
