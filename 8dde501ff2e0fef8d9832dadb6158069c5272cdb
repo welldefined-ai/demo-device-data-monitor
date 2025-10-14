@@ -1,0 +1,52 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    Several improvements:
+    1. Align the chart refresh interval and the reading interval.
+    2. The order of charts shoud be stable, by their IDs.
+    3. Isn't Current Value redundant with the value in the middle?
+    4. Reading values can be larger and colored yellow or red when there are warnings.
+    5. ONLINE need not change color by the reading value. It should only show if ONLINE (green) or OFFLINE (grey).
+    6. The trend chart should show thresholds and color the background of different regions.
+    7. Time labels on X of trend charts are not shown complete.
+  timestamp: '2025-10-14T09:25:59Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
+- role: assistant
+  content: |
+    ✅ **All 7 improvements implemented and deployed!**
+
+    **Changes Made:**
+
+    1. ✅ **Chart refresh interval**: Changed from 10s to **2s** (aligned with device polling)
+
+    2. ✅ **Stable ordering**: Devices now sorted by **ID** (consistent order)
+
+    3. ✅ **Removed redundant "Current Value"**: Now just shows large colored number
+
+    4. ✅ **Reading values larger and colored**:
+       - **Large Title** (level 2) instead of Statistic
+       - **Green** when normal (< warning)
+       - **Yellow** when ≥ warning threshold
+       - **Red** when ≥ critical threshold
+
+    5. ✅ **Status tag shows connection only**:
+       - **Green** = ONLINE
+       - **Grey** = OFFLINE/ERROR
+       - No longer changes based on threshold values
+
+    6. ✅ **Trend chart threshold visualization**:
+       - **Threshold lines**: Yellow dashed (warning), Red dashed (critical)
+       - **Background color regions**: Green/yellow/red zones using visualMap
+       - Area fill under line for better visibility
+
+    7. ✅ **Fixed X-axis time labels**:
+       - Shows every 4th label (cleaner)
+       - Rotated 30° for readability
+       - Taller chart (150px) for better layout
+
+    **Deployed:** Build `index-B7c5rsuW.js`
+
+    **Please refresh http://localhost:8081** to see all improvements. The dashboard now provides much clearer threshold monitoring with visual indicators!
+  timestamp: '2025-10-14T09:33:16Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
