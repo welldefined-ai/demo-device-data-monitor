@@ -4,7 +4,8 @@ import enum
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Integer, String, Text, func
+import sqlalchemy as sa
+from sqlalchemy import JSON, DateTime, Enum, Float, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ddms.db.base import Base
@@ -145,3 +146,23 @@ class GroupDevice(Base):
     def __repr__(self) -> str:
         """String representation of GroupDevice."""
         return f"<GroupDevice(group_id={self.group_id}, device_id={self.device_id})>"
+
+
+class Reading(Base):
+    """Time-series reading data from devices (TimescaleDB hypertable)."""
+
+    __tablename__ = "readings"
+    __table_args__ = (sa.PrimaryKeyConstraint("device_id", "timestamp"),)
+
+    device_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("devices.id", ondelete="CASCADE"), nullable=False
+    )
+    timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    value: Mapped[float] = mapped_column(Float, nullable=False)
+
+    def __repr__(self) -> str:
+        """String representation of Reading."""
+        return (
+            f"<Reading(device_id={self.device_id}, "
+            f"timestamp='{self.timestamp}', value={self.value})>"
+        )

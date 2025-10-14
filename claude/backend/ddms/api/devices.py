@@ -3,10 +3,13 @@
 import logging
 
 from fastapi import APIRouter, HTTPException, status
+from pymodbus.exceptions import ModbusException
 from sqlalchemy import select
 
 from ddms.api.deps import CurrentUser, DbSession, ModifyUser
-from ddms.db.models import Device
+from ddms.core.config import settings
+from ddms.db.models import Device, Reading
+from ddms.ingestion.modbus_client import ModbusClientWrapper
 from ddms.schemas.device import (
     ConnectionTestResult,
     DeviceCreate,
@@ -14,6 +17,7 @@ from ddms.schemas.device import (
     DeviceResponse,
     DeviceUpdate,
 )
+from ddms.schemas.reading import ReadingResponse, ReadingsListResponse
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +84,12 @@ async def create_device(
     session.add(new_device)
     await session.commit()
     await session.refresh(new_device)
+
+    # Add polling job for new device (skip in test environment)
+    if settings.env != "test":
+        from ddms.scheduler.manager import add_device_job
+
+        add_device_job(new_device.id, new_device.sampling_interval)
 
     logger.info(
         f"User {current_user.username} created device: {new_device.name} (id: {new_device.id})"
@@ -151,6 +161,9 @@ async def update_device(
             detail="Device not found",
         )
 
+    # Track if sampling interval changed
+    interval_changed = False
+
     # Apply updates
     if device_data.name is not None:
         device.name = device_data.name
@@ -160,6 +173,7 @@ async def update_device(
         device.unit = device_data.unit
     if device_data.sampling_interval is not None:
         device.sampling_interval = device_data.sampling_interval
+        interval_changed = True
     if device_data.thresholds is not None:
         device.thresholds = device_data.thresholds.model_dump()
     if device_data.modbus_config is not None:
@@ -167,6 +181,12 @@ async def update_device(
 
     await session.commit()
     await session.refresh(device)
+
+    # Update polling job if sampling interval changed (skip in test environment)
+    if interval_changed and settings.env != "test":
+        from ddms.scheduler.manager import update_device_job
+
+        update_device_job(device.id, device.sampling_interval)
 
     logger.info(f"User {current_user.username} updated device {device.name} (id: {device.id})")
 
@@ -202,6 +222,12 @@ async def delete_device(
     await session.delete(device)
     await session.commit()
 
+    # Remove polling job for deleted device (skip in test environment)
+    if settings.env != "test":
+        from ddms.scheduler.manager import remove_device_job
+
+        remove_device_job(device.id)
+
     logger.info(f"User {current_user.username} deleted device {device.name} (id: {device.id})")
 
 
@@ -234,14 +260,88 @@ async def test_device_connection(
             detail="Device not found",
         )
 
-    # TODO: Implement actual Modbus connection test in Iteration 3
-    # For now, return a placeholder response
     logger.info(
-        f"User {current_user.username} tested connection for device {device.name} (id: {device.id})"
+        f"User {current_user.username} testing connection "
+        f"for device {device.name} (id: {device.id})"
     )
 
-    return ConnectionTestResult(
-        success=False,
-        message="Connection test not yet implemented (coming in Iteration 3)",
-        error="Modbus client not yet configured",
+    # Test Modbus connection
+    try:
+        with ModbusClientWrapper(device.modbus_config) as modbus:
+            value = modbus.read_value()
+
+            if value is None:
+                return ConnectionTestResult(
+                    success=False,
+                    message="Connection failed: No data received",
+                    error="Modbus read returned None",
+                )
+
+            return ConnectionTestResult(
+                success=True,
+                message=f"Connection successful! Read value: {value} {device.unit}",
+                error=None,
+            )
+
+    except ModbusException as e:
+        return ConnectionTestResult(
+            success=False,
+            message="Modbus communication error",
+            error=str(e),
+        )
+
+    except Exception as e:
+        logger.error(f"Connection test error: {e}")
+        return ConnectionTestResult(
+            success=False,
+            message="Connection test failed",
+            error=str(e),
+        )
+
+
+@router.get("/{device_id}/readings/current", response_model=ReadingsListResponse)
+async def get_current_readings(
+    device_id: int,
+    session: DbSession,
+    current_user: CurrentUser,
+    limit: int = 100,
+) -> ReadingsListResponse:
+    """
+    Get recent readings for a device.
+
+    Args:
+        device_id: Device ID
+        limit: Maximum number of readings to return (default: 100)
+        session: Database session
+        current_user: Current authenticated user
+
+    Returns:
+        List of recent readings ordered by timestamp (newest first)
+
+    Raises:
+        HTTPException: If device not found
+    """
+    # Verify device exists
+    result = await session.execute(select(Device).where(Device.id == device_id))
+    device = result.scalar_one_or_none()
+
+    if device is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Device not found",
+        )
+
+    # Get recent readings
+    stmt = (
+        select(Reading)
+        .where(Reading.device_id == device_id)
+        .order_by(Reading.timestamp.desc())
+        .limit(limit)
+    )
+    readings_result = await session.execute(stmt)
+    readings = readings_result.scalars().all()
+
+    return ReadingsListResponse(
+        readings=[ReadingResponse.model_validate(r) for r in readings],
+        total=len(readings),
     )
