@@ -12,6 +12,7 @@ import { ProfilePage } from '../features/profile/ProfilePage';
 import { DevicesPage } from '../features/devices/DevicesPage';
 import { DeviceDetailPage } from '../features/devices/DeviceDetailPage';
 import { GroupsPage } from '../features/groups/GroupsPage';
+import { GroupDashboardPage } from '../features/groups/GroupDashboardPage';
 import { HistoryPage } from '../features/history/HistoryPage';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { AppLayout } from '../components/AppLayout';
@@ -44,6 +45,7 @@ function App() {
 
               {/* Groups - accessible to all authenticated users */}
               <Route path="/groups" element={<GroupsPage />} />
+              <Route path="/groups/:id/dashboard" element={<GroupDashboardPage />} />
 
               {/* History - accessible to all authenticated users */}
               <Route path="/history" element={<HistoryPage />} />
