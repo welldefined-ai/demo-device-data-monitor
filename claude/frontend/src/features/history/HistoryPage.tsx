@@ -3,11 +3,11 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Card, Select, DatePicker, Button, Spin, message, Space, Typography } from 'antd';
+import { Card, Select, DatePicker, Button, Spin, message, Space, Typography, Tabs } from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
 import ReactECharts from 'echarts-for-react';
 import dayjs, { Dayjs } from 'dayjs';
-import { Device, devicesApi, getErrorMessage } from '../../lib/api';
+import { Device, devicesApi, Group, groupsApi, getErrorMessage } from '../../lib/api';
 
 const { RangePicker } = DatePicker;
 const { Title } = Typography;
@@ -19,6 +19,8 @@ interface Reading {
 
 export const HistoryPage: React.FC = () => {
   const [devices, setDevices] = useState<Device[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<string>('all');
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<number[]>([]);
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
     dayjs().subtract(1, 'day').startOf('day'),
@@ -29,7 +31,14 @@ export const HistoryPage: React.FC = () => {
 
   useEffect(() => {
     loadDevices();
+    loadGroups();
   }, []);
+
+  useEffect(() => {
+    if (selectedGroupId !== 'all') {
+      loadGroupDevices(parseInt(selectedGroupId));
+    }
+  }, [selectedGroupId]);
 
   useEffect(() => {
     if (selectedDeviceIds.length > 0) {
@@ -47,6 +56,24 @@ export const HistoryPage: React.FC = () => {
       }
     } catch (error) {
       message.error(getErrorMessage(error));
+    }
+  };
+
+  const loadGroups = async () => {
+    try {
+      const response = await groupsApi.list();
+      setGroups(response.groups);
+    } catch (error) {
+      console.error(getErrorMessage(error));
+    }
+  };
+
+  const loadGroupDevices = async (groupId: number) => {
+    try {
+      const groupDevices = await groupsApi.getDevices(groupId);
+      setSelectedDeviceIds(groupDevices.map(d => d.id));
+    } catch (error) {
+      console.error(getErrorMessage(error));
     }
   };
 
@@ -222,12 +249,31 @@ export const HistoryPage: React.FC = () => {
     };
   };
 
+  const tabItems = [
+    {
+      key: 'all',
+      label: 'All Devices',
+      children: null,
+    },
+    ...groups.map(g => ({
+      key: g.id.toString(),
+      label: `${g.name} (${g.device_count || 0})`,
+      children: null,
+    })),
+  ];
+
   return (
     <Card>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <div>
           <Title level={3}>Historical Data</Title>
         </div>
+
+        <Tabs
+          activeKey={selectedGroupId}
+          onChange={setSelectedGroupId}
+          items={tabItems}
+        />
 
         <Space wrap>
           <Select

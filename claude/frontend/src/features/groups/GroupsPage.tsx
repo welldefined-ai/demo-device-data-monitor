@@ -3,7 +3,6 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Table,
   Button,
@@ -18,7 +17,7 @@ import {
   Typography,
   Tag,
 } from 'antd';
-import { PlusOutlined, DeleteOutlined, LinkOutlined, UnorderedListOutlined, MinusCircleOutlined, DashboardOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, LinkOutlined, UnorderedListOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import {
   groupsApi,
   devicesApi,
@@ -32,7 +31,6 @@ import { useCanModify } from '../../store/authStore';
 const { Title } = Typography;
 
 export const GroupsPage: React.FC = () => {
-  const navigate = useNavigate();
   const [groups, setGroups] = useState<Group[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(false);
@@ -160,13 +158,6 @@ export const GroupsPage: React.FC = () => {
       width: 350,
       render: (_: unknown, record: Group) => (
         <Space>
-          <Button
-            type="link"
-            icon={<DashboardOutlined />}
-            onClick={() => navigate(`/groups/${record.id}/dashboard`)}
-          >
-            View Dashboard
-          </Button>
           <Button
             type="link"
             icon={<UnorderedListOutlined />}

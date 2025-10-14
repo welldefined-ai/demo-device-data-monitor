@@ -3,9 +3,9 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Row, Col, Typography, Empty } from 'antd';
+import { Row, Col, Typography, Empty, Tabs } from 'antd';
 import { DeviceCard } from './DeviceCard';
-import { Device, devicesApi, getErrorMessage } from '../../lib/api';
+import { Device, devicesApi, Group, groupsApi, getErrorMessage } from '../../lib/api';
 
 const { Title } = Typography;
 
@@ -21,10 +21,14 @@ interface DeviceReading {
 
 export const DashboardPage: React.FC = () => {
   const [devices, setDevices] = useState<Device[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<string>('all');
+  const [groupDeviceIds, setGroupDeviceIds] = useState<Set<number>>(new Set());
   const [readings, setReadings] = useState<Map<number, DeviceReading>>(new Map());
 
   useEffect(() => {
     loadDevices();
+    loadGroups();
     const websocket = connectWebSocket();
 
     return () => {
@@ -32,13 +36,39 @@ export const DashboardPage: React.FC = () => {
         websocket.close();
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (selectedGroupId !== 'all') {
+      loadGroupDevices(parseInt(selectedGroupId));
+    } else {
+      setGroupDeviceIds(new Set());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedGroupId]);
 
   const loadDevices = async () => {
     try {
       const response = await devicesApi.list();
       setDevices(response.devices);
+    } catch (error) {
+      console.error(getErrorMessage(error));
+    }
+  };
+
+  const loadGroups = async () => {
+    try {
+      const response = await groupsApi.list();
+      setGroups(response.groups);
+    } catch (error) {
+      console.error(getErrorMessage(error));
+    }
+  };
+
+  const loadGroupDevices = async (groupId: number) => {
+    try {
+      const groupDevices = await groupsApi.getDevices(groupId);
+      setGroupDeviceIds(new Set(groupDevices.map(d => d.id)));
     } catch (error) {
       console.error(getErrorMessage(error));
     }
@@ -88,23 +118,53 @@ export const DashboardPage: React.FC = () => {
     );
   }
 
+  // Filter devices by selected group
+  const filteredDevices = selectedGroupId === 'all'
+    ? devices
+    : devices.filter(d => groupDeviceIds.has(d.id));
+
+  const tabItems = [
+    {
+      key: 'all',
+      label: 'All Devices',
+      children: null,
+    },
+    ...groups.map(g => ({
+      key: g.id.toString(),
+      label: `${g.name} (${g.device_count || 0})`,
+      children: null,
+    })),
+  ];
+
   return (
     <div>
       <Title level={2} style={{ marginBottom: 24 }}>
         Live Monitoring Dashboard
       </Title>
-      <Row gutter={[16, 16]}>
-        {devices
-          .sort((a, b) => a.id - b.id)
-          .map((device) => {
-            const reading = readings.get(device.id);
-            return (
-              <Col key={device.id} xs={24} sm={24} md={12} lg={12} xl={6}>
-                <DeviceCard device={device} reading={reading} />
-              </Col>
-            );
-          })}
-      </Row>
+
+      <Tabs
+        activeKey={selectedGroupId}
+        onChange={setSelectedGroupId}
+        items={tabItems}
+        style={{ marginBottom: 16 }}
+      />
+
+      {filteredDevices.length === 0 ? (
+        <Empty description="No devices in this group" style={{ marginTop: 50 }} />
+      ) : (
+        <Row gutter={[16, 16]}>
+          {filteredDevices
+            .sort((a, b) => a.id - b.id)
+            .map((device) => {
+              const reading = readings.get(device.id);
+              return (
+                <Col key={device.id} xs={24} sm={24} md={12} lg={12} xl={6}>
+                  <DeviceCard device={device} reading={reading} />
+                </Col>
+              );
+            })}
+        </Row>
+      )}
     </div>
   );
 };
