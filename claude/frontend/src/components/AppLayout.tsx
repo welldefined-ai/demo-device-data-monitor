@@ -10,6 +10,8 @@ import {
   SettingOutlined,
   LogoutOutlined,
   DashboardOutlined,
+  DatabaseOutlined,
+  GroupOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuthStore, useIsAdmin } from '../store/authStore';
@@ -47,12 +49,22 @@ export const AppLayout: React.FC = () => {
     },
   ];
 
-  // Main navigation items (only show users for admin/owner)
+  // Main navigation items
   const navItems = [
     {
       key: '/',
       icon: <DashboardOutlined />,
       label: 'Dashboard',
+    },
+    {
+      key: '/devices',
+      icon: <DatabaseOutlined />,
+      label: 'Devices',
+    },
+    {
+      key: '/groups',
+      icon: <GroupOutlined />,
+      label: 'Groups',
     },
     ...(isAdmin
       ? [
