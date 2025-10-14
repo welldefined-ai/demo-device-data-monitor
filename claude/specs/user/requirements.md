@@ -44,9 +44,11 @@ DDMS (Device Data Monitoring System) is a web-based application for monitoring a
 
 ## Historical Data
 
-**[DDMS-HIST-010]** The DDMS _shall_ allow users to select any monitoring device reading and specify a custom time range to view historical trend charts.
+**[DDMS-HIST-010]** The DDMS _shall_ allow users to select one or more monitoring devices and specify a custom time range to view historical trend charts.
 
-**[DDMS-HIST-020]** The DDMS _shall_ display threshold lines on historical trend charts.
+**[DDMS-HIST-015]** _When_ multiple devices with different units are selected, the DDMS _shall_ display multiple Y-axes to accommodate different measurement scales.
+
+**[DDMS-HIST-020]** The DDMS _shall_ indicate threshold violations on historical trend charts through visual markers or color-coded chart segments.
 
 **[DDMS-HIST-030]** _When_ historical data is displayed, the DDMS _shall_ allow users to export the dataset to a CSV file.
 

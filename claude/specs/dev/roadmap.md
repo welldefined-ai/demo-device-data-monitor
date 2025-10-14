@@ -302,8 +302,9 @@ This roadmap sequences implementation work into clear iterations, each with deli
 
 **Requirements**:
 
-- [x] DDMS-HIST-010: Custom time range charts
-- [x] DDMS-HIST-020: Threshold lines on history
+- [x] DDMS-HIST-010: Custom time range charts (single or multiple devices)
+- [x] DDMS-HIST-015: Multiple Y-axes for different units
+- [x] DDMS-HIST-020: Threshold indication on history (color-coded segments)
 - [x] DDMS-HIST-030: CSV export
 
 ---
