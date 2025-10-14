@@ -1,0 +1,93 @@
+schema: tigs.chat/v1
+messages:
+- role: assistant
+  content: |
+    ## ✅ Iteration 5 Complete!
+
+    **Commits:**
+    1. `14` - Historical data visualization and CSV export
+    2. `14.1` - Roadmap requirements update
+
+    ### Implementation Summary
+
+    **Backend:**
+    - `GET /api/devices/{id}/readings/history` - Query readings by time range (ISO8601 format)
+    - `GET /api/devices/{id}/readings/export` - Download CSV file with readings
+    - Default time range: last 24 hours
+    - Timezone handling for ISO8601 dates
+
+    **Frontend:**
+    - **History page** with device selector dropdown
+    - **Time range picker** (Ant Design RangePicker with date + time)
+    - **Historical line chart** (ECharts) with:
+      - Threshold lines (warning: yellow dashed, critical: red dashed)
+      - Color-coded background zones (green/yellow/red)
+      - Zoom and pan controls
+      - 500px height for detailed view
+      - Tooltip showing exact values
+    - **Export CSV button** (opens download in new tab)
+    - Loading states and empty states
+    - Reading count display
+
+    **Navigation:**
+    - Added **History** menu item (all users)
+
+    ---
+
+    ## Manual Verification Instructions
+
+    Access **http://localhost:8081** with `admin`/`admin`:
+
+    ### 1. Navigate to History Page
+    - Click **History** in navigation
+    - ✅ Device selector shows 4 devices
+    - ✅ Time range picker defaults to last 1 hour
+    - ✅ Chart loads with historical data
+
+    ### 2. Select Device and Time Range
+    - Select "Tank Temperature Sensor" from dropdown
+    - Change time range to last 30 minutes
+    - ✅ Chart updates immediately
+    - ✅ Trend line shows temperature readings
+
+    ### 3. Check Threshold Visualization
+    - Observe the chart
+    - ✅ Yellow dashed line at 28°C (warning threshold)
+    - ✅ Red dashed line at 29°C (critical threshold)
+    - ✅ Background colored zones:
+      - Green zone below warning
+      - Yellow zone between warning and critical
+      - Red zone above critical
+
+    ### 4. Use Zoom and Pan
+    - Scroll on chart to zoom
+    - Drag to pan left/right
+    - ✅ Chart zooms and pans smoothly
+    - ✅ Dataslider at bottom allows range selection
+
+    ### 5. Hover Over Chart
+    - Move mouse over chart line
+    - ✅ Tooltip shows: timestamp, value, unit
+    - ✅ Exact values displayed
+
+    ### 6. Export CSV
+    - Click **Export CSV** button
+    - ✅ CSV file downloads (e.g., `Tank_Temperature_Sensor_20251014_173000.csv`)
+    - Open CSV file
+    - ✅ Header: Timestamp, Value, Unit
+    - ✅ Data rows match chart values
+    - ✅ ISO8601 timestamps
+
+    ### 7. Test Different Devices
+    - Select "Pump Motor RPM"
+    - ✅ Chart updates with RPM data
+    - ✅ Threshold lines at 2700 (warning) and 2900 (critical)
+    - ✅ Background zones colored appropriately
+
+    ### 8. Test Empty State
+    - Set time range to future dates (no data)
+    - ✅ Shows "No data available for selected time range"
+
+    **All Iteration 5 requirements fulfilled!** ✅
+  timestamp: '2025-10-14T10:14:19Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
