@@ -7,11 +7,12 @@ from pymodbus.datastore import ModbusSequentialDataBlock, ModbusSlaveContext, Mo
 from pymodbus.server import StartTcpServer
 
 # Create a datastore with initial values
+# ModbusSequentialDataBlock(starting_address, values)
 store = ModbusSlaveContext(
-    di=ModbusSequentialDataBlock(0, [0] * 100),  # Discrete Inputs
-    co=ModbusSequentialDataBlock(0, [0] * 100),  # Coils
-    hr=ModbusSequentialDataBlock(0, [0] * 100),  # Holding Registers
-    ir=ModbusSequentialDataBlock(0, [0] * 100),  # Input Registers
+    di=ModbusSequentialDataBlock(0, [0] * 1000),  # Discrete Inputs
+    co=ModbusSequentialDataBlock(0, [0] * 1000),  # Coils
+    hr=ModbusSequentialDataBlock(0, [0] * 10000),  # Holding Registers 0-9999
+    ir=ModbusSequentialDataBlock(0, [0] * 1000),  # Input Registers
 )
 
 context = ModbusServerContext(slaves=store, single=True)

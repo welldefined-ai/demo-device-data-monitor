@@ -24,12 +24,20 @@ class ModbusClientWrapper:
                 - port: TCP port (for TCP)
                 - serial_port: Serial port path (for RTU)
                 - baudrate: Serial baudrate (for RTU)
-                - register: Register address to read
+                - register: Register address to read (40001-based addressing)
                 - data_type: Data type to parse ('int16', 'uint16', 'int32', 'uint32', 'float32')
         """
         self.config = config
         self.client: ModbusTcpClient | ModbusSerialClient | None = None
-        self.register = config["register"]
+
+        # Convert Modbus address (40001) to register address (0)
+        # Holding registers: 40001-49999 -> addresses 0-9998
+        raw_register = config["register"]
+        if raw_register >= 40001:
+            self.register = raw_register - 40001
+        else:
+            self.register = raw_register
+
         self.data_type = config["data_type"]
 
         if config["type"] == "tcp":
