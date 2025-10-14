@@ -24,7 +24,7 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from ddms.db.base import Base
-from ddms.db.models import Device, Group, GroupDevice, User  # noqa: F401
+from ddms.db.models import Device, Group, GroupDevice, Reading, User  # noqa: F401
 
 target_metadata = Base.metadata
 

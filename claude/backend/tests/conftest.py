@@ -1,5 +1,6 @@
 """Shared test fixtures for integration tests."""
 
+import os
 from collections.abc import AsyncGenerator, Generator
 
 import pytest
@@ -12,6 +13,9 @@ from ddms.core.security import hash_password
 from ddms.db.base import Base, get_async_session
 from ddms.db.models import User, UserRole
 from ddms.main import app
+
+# Set test environment to prevent scheduler from starting
+os.environ["DDMS_ENV"] = "test"
 
 # Use in-memory SQLite with async support for tests
 SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///:memory:"

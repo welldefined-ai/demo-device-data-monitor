@@ -55,8 +55,18 @@ async def startup_event() -> None:
         },
     )
 
+    # Initialize device polling jobs (skip in test environment)
+    if settings.env != "test":
+        from ddms.scheduler.manager import initialize_all_device_jobs
+
+        await initialize_all_device_jobs()
+        logger.info("Device polling scheduler initialized")
+
 
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
     """Application shutdown event."""
+    from ddms.scheduler.manager import stop_scheduler
+
+    stop_scheduler()
     logger.info("Shutting down DDMS API")

@@ -201,13 +201,13 @@ This roadmap sequences implementation work into clear iterations, each with deli
 
 **Requirements**:
 
-- [ ] DDMS-DATA-010: Persist config data
-- [ ] DDMS-DATA-011: Store time-series data
-- [ ] DDMS-DATA-020: Survive restarts
-- [ ] DDMS-PROTO-010: Modbus TCP/IP
-- [ ] DDMS-PROTO-011: Modbus RTU
-- [ ] DDMS-PROTO-012: Configure registers/data types
-- [ ] DDMS-MON-020: Auto-refresh
+- [x] DDMS-DATA-010: Persist config data
+- [x] DDMS-DATA-011: Store time-series data
+- [x] DDMS-DATA-020: Survive restarts
+- [x] DDMS-PROTO-010: Modbus TCP/IP
+- [x] DDMS-PROTO-011: Modbus RTU
+- [x] DDMS-PROTO-012: Configure registers/data types
+- [x] DDMS-MON-020: Auto-refresh
 
 ---
 

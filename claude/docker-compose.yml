@@ -55,5 +55,13 @@ services:
     ports:
       - "8081:80"
 
+  modbus-simulator:
+    build:
+      context: .
+      dockerfile: infra/docker/modbus-simulator/Dockerfile
+    container_name: claude-modbus-sim
+    ports:
+      - "5020:5020"
+
 volumes:
   db-data:
