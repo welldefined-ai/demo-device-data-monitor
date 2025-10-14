@@ -4,6 +4,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Row, Col, Typography, Empty, Tabs } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { DeviceCard } from './DeviceCard';
 import { Device, devicesApi, Group, groupsApi, getErrorMessage } from '../../lib/api';
 
@@ -20,6 +21,7 @@ interface DeviceReading {
 }
 
 export const DashboardPage: React.FC = () => {
+  const { t } = useTranslation();
   const [devices, setDevices] = useState<Device[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>('all');
@@ -112,7 +114,7 @@ export const DashboardPage: React.FC = () => {
   if (devices.length === 0) {
     return (
       <Empty
-        description="No devices configured. Create devices to start monitoring."
+        description={t('dashboard.noDevices')}
         style={{ marginTop: 50 }}
       />
     );
@@ -126,7 +128,7 @@ export const DashboardPage: React.FC = () => {
   const tabItems = [
     {
       key: 'all',
-      label: 'All Devices',
+      label: t('dashboard.allDevices'),
       children: null,
     },
     ...groups.map(g => ({
@@ -139,7 +141,7 @@ export const DashboardPage: React.FC = () => {
   return (
     <div>
       <Title level={2} style={{ marginBottom: 24 }}>
-        Live Monitoring Dashboard
+        {t('dashboard.title')}
       </Title>
 
       <Tabs
@@ -150,7 +152,7 @@ export const DashboardPage: React.FC = () => {
       />
 
       {filteredDevices.length === 0 ? (
-        <Empty description="No devices in this group" style={{ marginTop: 50 }} />
+        <Empty description={t('dashboard.noDevicesInGroup')} style={{ marginTop: 50 }} />
       ) : (
         <Row gutter={[16, 16]}>
           {filteredDevices

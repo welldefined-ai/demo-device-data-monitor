@@ -6,45 +6,13 @@
     "history": "History",
     "users": "Users",
     "profile": "Profile Settings",
-    "logout": "Logout"
+    "logout": "Logout",
+    "language": "Language"
   },
   "dashboard": {
     "title": "Live Monitoring Dashboard",
     "allDevices": "All Devices",
     "noDevices": "No devices configured. Create devices to start monitoring.",
-    "updated": "Updated"
-  },
-  "devices": {
-    "title": "Devices",
-    "create": "Create Device",
-    "view": "View",
-    "delete": "Delete",
-    "status": {
-      "online": "ONLINE",
-      "offline": "OFFLINE",
-      "error": "ERROR"
-    }
-  },
-  "groups": {
-    "title": "Device Groups",
-    "create": "Create Group",
-    "manage": "Manage Devices",
-    "assign": "Assign",
-    "delete": "Delete"
-  },
-  "history": {
-    "title": "Historical Data",
-    "selectDevices": "Select devices",
-    "export": "Export CSV",
-    "loading": "Loading historical data...",
-    "noData": "No data available for selected time range"
-  },
-  "common": {
-    "cancel": "Cancel",
-    "save": "Save",
-    "create": "Create",
-    "update": "Update",
-    "back": "Back",
-    "loading": "Loading..."
+    "noDevicesInGroup": "No devices in this group"
   }
 }

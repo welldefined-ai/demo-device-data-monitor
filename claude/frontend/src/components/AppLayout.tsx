@@ -49,16 +49,16 @@ export const AppLayout: React.FC = () => {
     {
       key: 'language',
       icon: <GlobalOutlined />,
-      label: 'Language',
+      label: t('nav.language'),
       children: [
         {
           key: 'en-US',
-          label: 'English',
+          label: `${i18n.language === 'en-US' ? '✓ ' : ''}English`,
           onClick: () => changeLanguage('en-US'),
         },
         {
           key: 'zh-CN',
-          label: '中文',
+          label: `${i18n.language === 'zh-CN' ? '✓ ' : ''}中文`,
           onClick: () => changeLanguage('zh-CN'),
         },
       ],
