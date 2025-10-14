@@ -11,6 +11,7 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
       - ./infra/db/init:/docker-entrypoint-initdb.d
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d ddms"]
       interval: 10s
@@ -25,7 +26,8 @@ services:
     environment:
       - DDMS_ENV=development
       - DDMS_DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/ddms
-    command: uvicorn ddms.main:app --host 0.0.0.0 --port 8000 --reload
+      - DDMS_DEV_AUTOCONFIG=1
+    command: sh -c "alembic upgrade head && uvicorn ddms.main:app --host 0.0.0.0 --port 8000 --reload"
     volumes:
       - ./backend:/app
     ports:
@@ -33,6 +35,9 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      simulator:
+        condition: service_started
+    restart: unless-stopped
     healthcheck:
       test:
         - CMD-SHELL
@@ -48,9 +53,35 @@ services:
       dockerfile: infra/docker/nginx/Dockerfile
     container_name: ddms-web
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "8080:80"
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          wget -qO- http://127.0.0.1/ >/dev/null 2>&1 && wget -qO- http://127.0.0.1/api/health | grep -q '"status":"ok"'
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+  simulator:
+    build:
+      context: .
+      dockerfile: infra/docker/simulator/Dockerfile
+    container_name: ddms-simulator
+    ports:
+      - "1502:1502"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import socket;s=socket.socket();s.settimeout(1);s.connect((\"127.0.0.1\",1502));s.close()' "]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
 volumes:
   db-data:

@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     log_level: str = Field("INFO", description="Application log level")
     owner_default_username: str = Field("owner", description="Default owner username for bootstrap")
     owner_default_password: str = Field("owner", description="Default owner password for bootstrap")
+    dev_autoconfig: bool = Field(False, description="Seed demo data in development")
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="DDMS_", case_sensitive=False)
 

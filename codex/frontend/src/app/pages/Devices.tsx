@@ -98,6 +98,21 @@ export function DevicesPage(): JSX.Element {
     }
   };
 
+  const onLatest = async (id: number) => {
+    try {
+      const lst = await api.get<Array<{ timestamp: string; value: number }>>(`/devices/${id}/readings/current?limit=1`);
+      if (!lst || lst.length === 0) {
+        msgApi.info('No readings yet');
+      } else {
+        const r = lst[0];
+        const when = new Date(r.timestamp).toLocaleString();
+        msgApi.success(`Latest: ${r.value} @ ${when}`);
+      }
+    } catch (e: any) {
+      msgApi.error(e?.message || 'Failed to fetch latest reading');
+    }
+  };
+
   const statusTag = (s: DeviceStatus) => (
     <Tag color={s === 'online' ? 'green' : s === 'error' ? 'red' : 'default'}>{s}</Tag>
   );
@@ -111,10 +126,11 @@ export function DevicesPage(): JSX.Element {
       { title: 'Status', dataIndex: 'status', width: 120, render: (v: DeviceStatus) => statusTag(v) },
       {
         title: 'Actions',
-        width: 220,
+        width: 300,
         render: (_: any, r: Device) => (
           <Space>
             <Button size="small" onClick={() => onTest(r.id)}>Test</Button>
+            <Button size="small" onClick={() => onLatest(r.id)}>Latest</Button>
             <Button danger size="small" onClick={() => onDelete(r.id)}>
               Delete
             </Button>
@@ -147,7 +163,7 @@ export function DevicesPage(): JSX.Element {
             <Input.TextArea placeholder='{"warning": 70, "critical": 90}' autoSize />
           </Form.Item>
           <Form.Item name="modbus_config" label="Modbus Config (JSON)">
-            <Input.TextArea placeholder='{"type":"tcp","host":"127.0.0.1","port":502}' autoSize />
+            <Input.TextArea placeholder='{"type":"tcp","host":"simulator","port":1502,"unit_id":1,"register":0,"data_type":"uint16"}' autoSize />
           </Form.Item>
         </Form>
       </Modal>
