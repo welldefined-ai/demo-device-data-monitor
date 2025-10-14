@@ -13,8 +13,10 @@ import {
   DatabaseOutlined,
   GroupOutlined,
   LineChartOutlined,
+  GlobalOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore, useIsAdmin } from '../store/authStore';
 
 const { Header, Content } = Layout;
@@ -23,6 +25,7 @@ const { Text } = Typography;
 export const AppLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t, i18n } = useTranslation();
   const { user, logout } = useAuthStore();
   const isAdmin = useIsAdmin();
 
@@ -31,13 +34,34 @@ export const AppLayout: React.FC = () => {
     navigate('/login');
   };
 
+  const changeLanguage = (lng: string) => {
+    i18n.changeLanguage(lng);
+  };
+
   // User menu items
   const userMenuItems = [
     {
       key: 'profile',
       icon: <SettingOutlined />,
-      label: 'Profile Settings',
+      label: t('nav.profile'),
       onClick: () => navigate('/profile'),
+    },
+    {
+      key: 'language',
+      icon: <GlobalOutlined />,
+      label: t('nav.language'),
+      children: [
+        {
+          key: 'en-US',
+          label: `${i18n.language === 'en-US' ? '✓ ' : ''}English`,
+          onClick: () => changeLanguage('en-US'),
+        },
+        {
+          key: 'zh-CN',
+          label: `${i18n.language === 'zh-CN' ? '✓ ' : ''}中文`,
+          onClick: () => changeLanguage('zh-CN'),
+        },
+      ],
     },
     {
       type: 'divider' as const,
@@ -45,7 +69,7 @@ export const AppLayout: React.FC = () => {
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: 'Logout',
+      label: t('nav.logout'),
       onClick: handleLogout,
     },
   ];
@@ -55,29 +79,29 @@ export const AppLayout: React.FC = () => {
     {
       key: '/',
       icon: <DashboardOutlined />,
-      label: 'Dashboard',
+      label: t('nav.dashboard'),
     },
     {
       key: '/devices',
       icon: <DatabaseOutlined />,
-      label: 'Devices',
+      label: t('nav.devices'),
     },
     {
       key: '/groups',
       icon: <GroupOutlined />,
-      label: 'Groups',
+      label: t('nav.groups'),
     },
     {
       key: '/history',
       icon: <LineChartOutlined />,
-      label: 'History',
+      label: t('nav.history'),
     },
     ...(isAdmin
       ? [
           {
             key: '/users',
             icon: <TeamOutlined />,
-            label: 'Users',
+            label: t('nav.users'),
           },
         ]
       : []),

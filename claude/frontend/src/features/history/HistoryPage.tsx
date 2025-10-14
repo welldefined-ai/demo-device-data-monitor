@@ -7,6 +7,7 @@ import { Card, Select, DatePicker, Button, Spin, message, Space, Typography, Tab
 import { DownloadOutlined } from '@ant-design/icons';
 import ReactECharts from 'echarts-for-react';
 import dayjs, { Dayjs } from 'dayjs';
+import { useTranslation } from 'react-i18next';
 import { Device, devicesApi, Group, groupsApi, getErrorMessage } from '../../lib/api';
 
 const { RangePicker } = DatePicker;
@@ -18,6 +19,7 @@ interface Reading {
 }
 
 export const HistoryPage: React.FC = () => {
+  const { t } = useTranslation();
   const [devices, setDevices] = useState<Device[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>('all');
@@ -131,7 +133,7 @@ export const HistoryPage: React.FC = () => {
     // Export first selected device
     const url = `/api/devices/${selectedDeviceIds[0]}/readings/export?start=${start}&end=${end}`;
     window.open(url, '_blank');
-    message.success('Export started');
+    message.success(t('history.exportStarted'));
   };
 
   const getChartOption = () => {
@@ -207,7 +209,7 @@ export const HistoryPage: React.FC = () => {
 
     return {
       title: {
-        text: 'Historical Trends',
+        text: t('history.historicalTrends'),
         left: 'center',
       },
       legend: {
@@ -252,7 +254,7 @@ export const HistoryPage: React.FC = () => {
   const tabItems = [
     {
       key: 'all',
-      label: 'All Devices',
+      label: t('dashboard.allDevices'),
       children: null,
     },
     ...groups.map(g => ({
@@ -266,7 +268,7 @@ export const HistoryPage: React.FC = () => {
     <Card>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <div>
-          <Title level={3}>Historical Data</Title>
+          <Title level={3}>{t('history.title')}</Title>
         </div>
 
         <Tabs
@@ -279,7 +281,7 @@ export const HistoryPage: React.FC = () => {
           <Select
             mode="multiple"
             style={{ minWidth: 300 }}
-            placeholder="Select devices"
+            placeholder={t('history.selectDevices')}
             value={selectedDeviceIds}
             onChange={setSelectedDeviceIds}
             maxTagCount="responsive"
@@ -307,17 +309,17 @@ export const HistoryPage: React.FC = () => {
             onClick={handleExport}
             disabled={selectedDeviceIds.length === 0 || deviceReadings.size === 0}
           >
-            Export CSV
+            {t('history.exportCSV')}
           </Button>
         </Space>
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: 50 }}>
-            <Spin size="large" tip="Loading historical data..." />
+            <Spin size="large" tip={t('history.loading')} />
           </div>
         ) : deviceReadings.size === 0 ? (
           <div style={{ textAlign: 'center', padding: 50, color: '#999' }}>
-            No data available for selected time range
+            {t('history.noData')}
           </div>
         ) : (
           <ReactECharts
@@ -329,9 +331,9 @@ export const HistoryPage: React.FC = () => {
 
         {!loading && deviceReadings.size > 0 && (
           <div style={{ textAlign: 'center', color: '#999', fontSize: 12 }}>
-            {selectedDeviceIds.length} device(s) selected •{' '}
-            {Array.from(deviceReadings.values()).reduce((sum, r) => sum + r.length, 0)} total readings •{' '}
-            {dateRange[0].format('YYYY-MM-DD')} to {dateRange[1].format('YYYY-MM-DD')}
+            {selectedDeviceIds.length} {t('history.deviceSelected')} •{' '}
+            {Array.from(deviceReadings.values()).reduce((sum, r) => sum + r.length, 0)} {t('history.totalReadings')} •{' '}
+            {dateRange[0].format('YYYY-MM-DD')} {t('history.to')} {dateRange[1].format('YYYY-MM-DD')}
           </div>
         )}
       </Space>

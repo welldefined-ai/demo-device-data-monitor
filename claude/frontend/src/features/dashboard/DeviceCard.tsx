@@ -4,6 +4,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Card, Typography, Tag, Space } from 'antd';
+import { useTranslation } from 'react-i18next';
 import ReactECharts from 'echarts-for-react';
 import { Device, getErrorMessage } from '../../lib/api';
 
@@ -25,6 +26,7 @@ interface DeviceCardProps {
 }
 
 export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
+  const { t } = useTranslation();
   const [historicalData, setHistoricalData] = useState<Array<{ timestamp: string; value: number }>>([]);
 
   useEffect(() => {
@@ -220,7 +222,7 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text strong>{device.name}</Text>
           <Tag color={getConnectionStatusColor()}>
-            {reading?.status?.toUpperCase() || device.status.toUpperCase()}
+            {t(`devices.${reading?.status || device.status}`)}
           </Tag>
         </div>
 
@@ -233,14 +235,14 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
 
         <Text type="secondary" style={{ fontSize: 12, textAlign: 'center', display: 'block' }}>
           {reading?.timestamp
-            ? `Updated: ${new Date(reading.timestamp).toLocaleTimeString()}`
-            : 'No data'}
+            ? `${t('dashboard.updated')}: ${new Date(reading.timestamp).toLocaleTimeString()}`
+            : t('devices.noReadingsYet')}
         </Text>
 
         <ReactECharts option={getGaugeOption()} style={{ height: '180px' }} />
 
         <div>
-          <Text type="secondary" style={{ fontSize: 12 }}>Recent Trend</Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>{t('dashboard.recentTrend')}</Text>
           <ReactECharts option={getTrendOption()} style={{ height: '150px' }} />
         </div>
       </Space>

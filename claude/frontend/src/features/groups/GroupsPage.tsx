@@ -18,6 +18,7 @@ import {
   Tag,
 } from 'antd';
 import { PlusOutlined, DeleteOutlined, LinkOutlined, UnorderedListOutlined, MinusCircleOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import {
   groupsApi,
   devicesApi,
@@ -31,6 +32,7 @@ import { useCanModify } from '../../store/authStore';
 const { Title } = Typography;
 
 export const GroupsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [groups, setGroups] = useState<Group[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(false);
@@ -129,31 +131,31 @@ export const GroupsPage: React.FC = () => {
 
   const columns = [
     {
-      title: 'ID',
+      title: t('groups.id'),
       dataIndex: 'id',
       key: 'id',
       width: 60,
     },
     {
-      title: 'Name',
+      title: t('groups.name'),
       dataIndex: 'name',
       key: 'name',
     },
     {
-      title: 'Description',
+      title: t('groups.description'),
       dataIndex: 'description',
       key: 'description',
       render: (text: string) => text || '-',
     },
     {
-      title: 'Devices',
+      title: t('groups.devices'),
       dataIndex: 'device_count',
       key: 'device_count',
       width: 100,
       render: (count: number) => <Tag color="blue">{count || 0} devices</Tag>,
     },
     {
-      title: 'Actions',
+      title: t('groups.actions'),
       key: 'actions',
       width: 350,
       render: (_: unknown, record: Group) => (
@@ -163,7 +165,7 @@ export const GroupsPage: React.FC = () => {
             icon={<UnorderedListOutlined />}
             onClick={() => handleManageDevices(record)}
           >
-            Manage Devices
+            {t('groups.manageDevices')}
           </Button>
           {canModify && (
             <>
@@ -175,17 +177,17 @@ export const GroupsPage: React.FC = () => {
                   setIsAssignModalOpen(true);
                 }}
               >
-                Assign
+                {t('groups.assign')}
               </Button>
               <Popconfirm
-                title="Delete group"
-                description="Devices will remain in system. Continue?"
+                title={t('groups.deleteGroup')}
+                description={t('groups.deleteConfirm')}
                 onConfirm={() => handleDeleteGroup(record.id)}
-                okText="Yes"
-                cancelText="No"
+                okText={t('common.yes')}
+                cancelText={t('common.no')}
               >
                 <Button type="link" danger icon={<DeleteOutlined />}>
-                  Delete
+                  {t('groups.delete')}
                 </Button>
               </Popconfirm>
             </>
@@ -198,14 +200,14 @@ export const GroupsPage: React.FC = () => {
   return (
     <Card>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-        <Title level={3}>Device Groups</Title>
+        <Title level={3}>{t('groups.title')}</Title>
         {canModify && (
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => setIsCreateModalOpen(true)}
           >
-            Create Group
+            {t('groups.createGroup')}
           </Button>
         )}
       </div>
@@ -220,7 +222,7 @@ export const GroupsPage: React.FC = () => {
 
       {/* Create Group Modal */}
       <Modal
-        title="Create New Group"
+        title={t('groups.createNewGroup')}
         open={isCreateModalOpen}
         onCancel={() => {
           setIsCreateModalOpen(false);
@@ -235,21 +237,21 @@ export const GroupsPage: React.FC = () => {
         >
           <Form.Item
             name="name"
-            label="Group Name"
+            label={t('groups.groupName')}
             rules={[{ required: true, message: 'Please input group name!' }]}
           >
             <Input placeholder="e.g., Tank Sensors" />
           </Form.Item>
 
-          <Form.Item name="description" label="Description">
+          <Form.Item name="description" label={t('groups.description')}>
             <Input.TextArea rows={3} placeholder="Optional description" />
           </Form.Item>
 
           <Form.Item>
             <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-              <Button onClick={() => setIsCreateModalOpen(false)}>Cancel</Button>
+              <Button onClick={() => setIsCreateModalOpen(false)}>{t('common.cancel')}</Button>
               <Button type="primary" htmlType="submit">
-                Create
+                {t('common.create')}
               </Button>
             </Space>
           </Form.Item>
@@ -258,7 +260,7 @@ export const GroupsPage: React.FC = () => {
 
       {/* Assign Device Modal */}
       <Modal
-        title="Assign Device to Group"
+        title={t('groups.assignDevice')}
         open={isAssignModalOpen}
         onCancel={() => {
           setIsAssignModalOpen(false);
@@ -274,7 +276,7 @@ export const GroupsPage: React.FC = () => {
         >
           <Form.Item
             name="device_id"
-            label="Select Device"
+            label={t('groups.selectDevice')}
             rules={[{ required: true, message: 'Please select a device!' }]}
           >
             <Select
@@ -292,9 +294,9 @@ export const GroupsPage: React.FC = () => {
 
           <Form.Item>
             <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-              <Button onClick={() => setIsAssignModalOpen(false)}>Cancel</Button>
+              <Button onClick={() => setIsAssignModalOpen(false)}>{t('common.cancel')}</Button>
               <Button type="primary" htmlType="submit">
-                Assign
+                {t('groups.assign')}
               </Button>
             </Space>
           </Form.Item>
@@ -303,7 +305,7 @@ export const GroupsPage: React.FC = () => {
 
       {/* Manage Devices Modal */}
       <Modal
-        title={`Devices in ${selectedGroup?.name || 'Group'}`}
+        title={`${t('groups.devicesIn')} ${selectedGroup?.name || 'Group'}`}
         open={isManageModalOpen}
         onCancel={() => {
           setIsManageModalOpen(false);
@@ -314,7 +316,7 @@ export const GroupsPage: React.FC = () => {
         width={600}
       >
         {groupDevices.length === 0 ? (
-          <Typography.Text type="secondary">No devices in this group</Typography.Text>
+          <Typography.Text type="secondary">{t('groups.noDevicesInGroup')}</Typography.Text>
         ) : (
           <Space direction="vertical" style={{ width: '100%' }}>
             {groupDevices.map((device) => (
@@ -326,11 +328,11 @@ export const GroupsPage: React.FC = () => {
                   </Space>
                   {canModify && (
                     <Popconfirm
-                      title="Remove device from group"
-                      description="Device will remain in system. Continue?"
+                      title={t('groups.removeDevice')}
+                      description={t('groups.removeConfirm')}
                       onConfirm={() => handleRemoveDevice(device.id)}
-                      okText="Yes"
-                      cancelText="No"
+                      okText={t('common.yes')}
+                      cancelText={t('common.no')}
                     >
                       <Button
                         type="link"
@@ -338,7 +340,7 @@ export const GroupsPage: React.FC = () => {
                         icon={<MinusCircleOutlined />}
                         size="small"
                       >
-                        Remove
+                        {t('groups.remove')}
                       </Button>
                     </Popconfirm>
                   )}

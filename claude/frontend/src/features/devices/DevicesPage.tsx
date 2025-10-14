@@ -20,6 +20,7 @@ import {
 } from 'antd';
 import { PlusOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   devicesApi,
   Device,
@@ -46,6 +47,7 @@ interface DeviceFormValues {
 }
 
 export const DevicesPage: React.FC = () => {
+  const { t } = useTranslation();
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -127,47 +129,47 @@ export const DevicesPage: React.FC = () => {
 
   const columns = [
     {
-      title: 'ID',
+      title: t('devices.id'),
       dataIndex: 'id',
       key: 'id',
       width: 60,
     },
     {
-      title: 'Name',
+      title: t('devices.name'),
       dataIndex: 'name',
       key: 'name',
     },
     {
-      title: 'Unit',
+      title: t('devices.unit'),
       dataIndex: 'unit',
       key: 'unit',
       width: 80,
     },
     {
-      title: 'Status',
+      title: t('devices.status'),
       dataIndex: 'status',
       key: 'status',
       width: 100,
       render: (status: string) => (
-        <Tag color={getStatusColor(status)}>{status.toUpperCase()}</Tag>
+        <Tag color={getStatusColor(status)}>{t(`devices.${status}`)}</Tag>
       ),
     },
     {
-      title: 'Sampling Interval',
+      title: t('devices.samplingInterval'),
       dataIndex: 'sampling_interval',
       key: 'sampling_interval',
       width: 150,
       render: (interval: number) => `${interval}s`,
     },
     {
-      title: 'Last Reading',
+      title: t('devices.lastReading'),
       dataIndex: 'last_reading_at',
       key: 'last_reading_at',
       width: 180,
       render: (date: string | null) => (date ? new Date(date).toLocaleString() : '-'),
     },
     {
-      title: 'Actions',
+      title: t('devices.actions'),
       key: 'actions',
       width: 200,
       render: (_: unknown, record: Device) => (
@@ -177,18 +179,18 @@ export const DevicesPage: React.FC = () => {
             icon={<EyeOutlined />}
             onClick={() => navigate(`/devices/${record.id}`)}
           >
-            View
+            {t('devices.view')}
           </Button>
           {canModify && (
             <Popconfirm
-              title="Delete device"
-              description="Are you sure? Historical data will be retained."
+              title={t('devices.deleteDevice')}
+              description={t('devices.deleteConfirm')}
               onConfirm={() => handleDelete(record.id)}
-              okText="Yes"
-              cancelText="No"
+              okText={t('common.yes')}
+              cancelText={t('common.no')}
             >
               <Button type="link" danger icon={<DeleteOutlined />}>
-                Delete
+                {t('devices.delete')}
               </Button>
             </Popconfirm>
           )}
@@ -200,14 +202,14 @@ export const DevicesPage: React.FC = () => {
   return (
     <Card>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-        <Title level={3}>Devices</Title>
+        <Title level={3}>{t('devices.title')}</Title>
         {canModify && (
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => setIsModalOpen(true)}
           >
-            Create Device
+            {t('devices.createDevice')}
           </Button>
         )}
       </div>
@@ -221,7 +223,7 @@ export const DevicesPage: React.FC = () => {
       />
 
       <Modal
-        title="Create New Device"
+        title={t('devices.createNewDevice')}
         open={isModalOpen}
         onCancel={() => {
           setIsModalOpen(false);
@@ -243,19 +245,19 @@ export const DevicesPage: React.FC = () => {
         >
           <Form.Item
             name="name"
-            label="Device Name"
+            label={t('devices.deviceName')}
             rules={[{ required: true, message: 'Please input device name!' }]}
           >
             <Input placeholder="e.g., Temperature Sensor 1" />
           </Form.Item>
 
-          <Form.Item name="description" label="Description">
+          <Form.Item name="description" label={t('devices.description')}>
             <Input.TextArea rows={2} placeholder="Optional description" />
           </Form.Item>
 
           <Form.Item
             name="unit"
-            label="Unit"
+            label={t('devices.unit')}
             rules={[{ required: true, message: 'Please input unit!' }]}
           >
             <Input placeholder="e.g., °C, bar, RPM, %" />
@@ -263,32 +265,32 @@ export const DevicesPage: React.FC = () => {
 
           <Form.Item
             name="sampling_interval"
-            label="Sampling Interval (seconds)"
+            label={t('devices.samplingIntervalSeconds')}
             rules={[{ required: true, message: 'Please input sampling interval!' }]}
           >
             <InputNumber min={1} style={{ width: '100%' }} />
           </Form.Item>
 
-          <Title level={5}>Thresholds</Title>
-          <Form.Item name="warning_threshold" label="Warning Threshold">
+          <Title level={5}>{t('devices.thresholds')}</Title>
+          <Form.Item name="warning_threshold" label={t('devices.warningThreshold')}>
             <InputNumber style={{ width: '100%' }} placeholder="Optional" />
           </Form.Item>
 
-          <Form.Item name="critical_threshold" label="Critical Threshold">
+          <Form.Item name="critical_threshold" label={t('devices.criticalThreshold')}>
             <InputNumber style={{ width: '100%' }} placeholder="Optional" />
           </Form.Item>
 
-          <Title level={5}>Modbus Configuration</Title>
-          <Form.Item name="modbus_type" label="Type" rules={[{ required: true }]}>
+          <Title level={5}>{t('devices.modbusConfiguration')}</Title>
+          <Form.Item name="modbus_type" label={t('devices.type')} rules={[{ required: true }]}>
             <Select>
-              <Option value="tcp">Modbus TCP</Option>
-              <Option value="rtu">Modbus RTU</Option>
+              <Option value="tcp">{t('devices.modbusType.tcp')}</Option>
+              <Option value="rtu">{t('devices.modbusType.rtu')}</Option>
             </Select>
           </Form.Item>
 
           <Form.Item
             name="modbus_host"
-            label="Host"
+            label={t('devices.host')}
             rules={[{ required: true, message: 'Please input host!' }]}
           >
             <Input placeholder="e.g., 192.168.1.100" />
@@ -296,7 +298,7 @@ export const DevicesPage: React.FC = () => {
 
           <Form.Item
             name="modbus_port"
-            label="Port"
+            label={t('devices.port')}
             rules={[{ required: true, message: 'Please input port!' }]}
           >
             <InputNumber min={1} max={65535} style={{ width: '100%' }} />
@@ -304,7 +306,7 @@ export const DevicesPage: React.FC = () => {
 
           <Form.Item
             name="modbus_register"
-            label="Register Address"
+            label={t('devices.registerAddress')}
             rules={[{ required: true, message: 'Please input register!' }]}
           >
             <InputNumber min={0} style={{ width: '100%' }} />
@@ -312,7 +314,7 @@ export const DevicesPage: React.FC = () => {
 
           <Form.Item
             name="modbus_data_type"
-            label="Data Type"
+            label={t('devices.dataType')}
             rules={[{ required: true }]}
           >
             <Select>
@@ -326,9 +328,9 @@ export const DevicesPage: React.FC = () => {
 
           <Form.Item>
             <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-              <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
+              <Button onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
               <Button type="primary" htmlType="submit">
-                Create
+                {t('common.create')}
               </Button>
             </Space>
           </Form.Item>
