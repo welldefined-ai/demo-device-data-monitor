@@ -1,12 +1,13 @@
 """Group management endpoints."""
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import func, select
 
 from ddms.api.deps import CurrentUser, DbSession, ModifyUser
-from ddms.db.models import Device, Group, GroupDevice
+from ddms.db.models import Device, Group, GroupDevice, Reading
 from ddms.schemas.device import DeviceResponse
 from ddms.schemas.group import (
     DeviceAssignmentResponse,
@@ -15,6 +16,7 @@ from ddms.schemas.group import (
     GroupResponse,
     GroupUpdate,
 )
+from ddms.schemas.reading import ReadingResponse
 
 logger = logging.getLogger(__name__)
 
@@ -313,3 +315,66 @@ async def remove_device_from_group(
     await session.commit()
 
     logger.info(f"User {current_user.username} removed device {device_id} from group {group_id}")
+
+
+@router.get("/{group_id}/overview")
+async def get_group_overview(
+    group_id: int,
+    session: DbSession,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
+    """
+    Get group overview with devices and latest readings.
+
+    Args:
+        group_id: Group ID
+        session: Database session
+        current_user: Current authenticated user
+
+    Returns:
+        Group info with devices and current readings
+
+    Raises:
+        HTTPException: If group not found
+    """
+    # Get group
+    group_result = await session.execute(select(Group).where(Group.id == group_id))
+    group = group_result.scalar_one_or_none()
+
+    if group is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Group not found",
+        )
+
+    # Get devices in group
+    devices_stmt = (
+        select(Device)
+        .join(GroupDevice, Device.id == GroupDevice.device_id)
+        .where(GroupDevice.group_id == group_id)
+    )
+    devices_result = await session.execute(devices_stmt)
+    devices = devices_result.scalars().all()
+
+    # Get latest reading for each device
+    devices_with_readings = []
+    for device in devices:
+        reading_stmt = (
+            select(Reading)
+            .where(Reading.device_id == device.id)
+            .order_by(Reading.timestamp.desc())
+            .limit(1)
+        )
+        reading_result = await session.execute(reading_stmt)
+        latest_reading = reading_result.scalar_one_or_none()
+
+        device_dict = DeviceResponse.model_validate(device).model_dump()
+        if latest_reading:
+            reading_dict = ReadingResponse.model_validate(latest_reading).model_dump()
+            device_dict["latest_reading"] = reading_dict
+        devices_with_readings.append(device_dict)
+
+    return {
+        "group": GroupResponse.model_validate(group).model_dump(),
+        "devices": devices_with_readings,
+    }
