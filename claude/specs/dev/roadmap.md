@@ -345,8 +345,8 @@ This roadmap sequences implementation work into clear iterations, each with deli
 
 **Requirements**:
 
-- [ ] DDMS-GRP-050: Group live dashboard
-- [ ] DDMS-GRP-051: Group historical charts
+- [x] DDMS-GRP-050: Group live dashboard
+- [x] DDMS-GRP-051: Group historical charts
 
 ---
 
