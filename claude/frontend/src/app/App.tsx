@@ -12,6 +12,7 @@ import { ProfilePage } from '../features/profile/ProfilePage';
 import { DevicesPage } from '../features/devices/DevicesPage';
 import { DeviceDetailPage } from '../features/devices/DeviceDetailPage';
 import { GroupsPage } from '../features/groups/GroupsPage';
+import { HistoryPage } from '../features/history/HistoryPage';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { AppLayout } from '../components/AppLayout';
 import { useAuthStore } from '../store/authStore';
@@ -43,6 +44,9 @@ function App() {
 
               {/* Groups - accessible to all authenticated users */}
               <Route path="/groups" element={<GroupsPage />} />
+
+              {/* History - accessible to all authenticated users */}
+              <Route path="/history" element={<HistoryPage />} />
 
               {/* Profile - accessible to all authenticated users */}
               <Route path="/profile" element={<ProfilePage />} />

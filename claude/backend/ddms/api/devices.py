@@ -1,8 +1,12 @@
 """Device management endpoints."""
 
+import csv
+import io
 import logging
+from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import StreamingResponse
 from pymodbus.exceptions import ModbusException
 from sqlalchemy import select
 
@@ -344,4 +348,135 @@ async def get_current_readings(
     return ReadingsListResponse(
         readings=[ReadingResponse.model_validate(r) for r in readings],
         total=len(readings),
+    )
+
+
+@router.get("/{device_id}/readings/history", response_model=ReadingsListResponse)
+async def get_historical_readings(
+    device_id: int,
+    session: DbSession,
+    current_user: CurrentUser,
+    start: str | None = None,
+    end: str | None = None,
+) -> ReadingsListResponse:
+    """
+    Get historical readings for a device within a time range.
+
+    Args:
+        device_id: Device ID
+        session: Database session
+        current_user: Current authenticated user
+        start: Start time (ISO8601 format), defaults to 24 hours ago
+        end: End time (ISO8601 format), defaults to now
+
+    Returns:
+        List of readings within time range
+
+    Raises:
+        HTTPException: If device not found or invalid time format
+    """
+    # Verify device exists
+    result = await session.execute(select(Device).where(Device.id == device_id))
+    device = result.scalar_one_or_none()
+
+    if device is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Device not found",
+        )
+
+    # Parse time range
+    try:
+        if end:
+            end_time = datetime.fromisoformat(end.replace("Z", "+00:00"))
+        else:
+            end_time = datetime.now()
+
+        if start:
+            start_time = datetime.fromisoformat(start.replace("Z", "+00:00"))
+        else:
+            from datetime import timedelta
+
+            start_time = end_time - timedelta(hours=24)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid time format: {e}",
+        ) from None
+
+    # Query readings within time range
+    stmt = (
+        select(Reading)
+        .where(
+            Reading.device_id == device_id,
+            Reading.timestamp >= start_time,
+            Reading.timestamp <= end_time,
+        )
+        .order_by(Reading.timestamp.asc())
+    )
+    readings_result = await session.execute(stmt)
+    readings = readings_result.scalars().all()
+
+    return ReadingsListResponse(
+        readings=[ReadingResponse.model_validate(r) for r in readings],
+        total=len(readings),
+    )
+
+
+@router.get("/{device_id}/readings/export")
+async def export_readings_csv(
+    device_id: int,
+    session: DbSession,
+    current_user: CurrentUser,
+    start: str | None = None,
+    end: str | None = None,
+) -> StreamingResponse:
+    """
+    Export historical readings as CSV file.
+
+    Args:
+        device_id: Device ID
+        session: Database session
+        current_user: Current authenticated user
+        start: Start time (ISO8601 format)
+        end: End time (ISO8601 format)
+
+    Returns:
+        CSV file download
+
+    Raises:
+        HTTPException: If device not found
+    """
+    # Reuse history endpoint logic
+    readings_response = await get_historical_readings(device_id, session, current_user, start, end)
+
+    # Get device info for filename
+    result = await session.execute(select(Device).where(Device.id == device_id))
+    device = result.scalar_one()
+
+    # Create CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Write header
+    writer.writerow(["Timestamp", "Value", "Unit"])
+
+    # Write data rows
+    for reading in readings_response.readings:
+        writer.writerow(
+            [
+                reading.timestamp.isoformat(),
+                reading.value,
+                device.unit,
+            ]
+        )
+
+    # Prepare response
+    output.seek(0)
+    filename = f"{device.name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
