@@ -117,6 +117,7 @@ This roadmap sequences implementation work into clear iterations, each with deli
   - `POST /api/groups` - Create group (admin/owner)
   - `PATCH /api/groups/{id}` - Update group name (admin/owner)
   - `DELETE /api/groups/{id}` - Delete group (admin/owner)
+  - `GET /api/groups/{id}/devices` - List devices in group
   - `POST /api/groups/{id}/devices/{device_id}` - Assign device to group (admin/owner)
   - `DELETE /api/groups/{id}/devices/{device_id}` - Remove device from group (admin/owner)
 
@@ -128,6 +129,7 @@ This roadmap sequences implementation work into clear iterations, each with deli
 - Groups list page
 - Group creation/edit form
 - Device assignment interface (enforce single group per device)
+- Device removal from group interface
 
 ### Acceptance
 
@@ -139,6 +141,7 @@ This roadmap sequences implementation work into clear iterations, each with deli
 - View device detail showing status (offline initially, no readings yet)
 - Create multiple groups and assign devices
 - Attempt to assign device to second group, verify error message
+- View devices in group and remove a device from group
 - Delete device, verify it's removed from list but historical data remains
 
 **Requirements**:
