@@ -69,6 +69,7 @@ jobs:
           DDMS_ENV: test
         run: |
           cd claude/backend
+          export DDMS_ENV=test
           pytest -v --cov=ddms --cov-report=term --cov-report=xml
 
       - name: Upload coverage
