@@ -4,7 +4,7 @@ import { useAuth } from '../../store/auth';
 import { api } from '../../lib/api';
 
 export function ProfilePage(): JSX.Element {
-  const { user, logout, fetchMe } = useAuth();
+  const { user, fetchMe } = useAuth();
   const [form] = Form.useForm();
   const [msgApi, contextHolder] = message.useMessage();
 
@@ -34,4 +34,3 @@ export function ProfilePage(): JSX.Element {
     </Card>
   );
 }
-

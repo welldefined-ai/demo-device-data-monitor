@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 
 from ddms.api.deps import SessionDep, require_roles
@@ -9,15 +11,13 @@ from ddms.db.repositories.groups import (
     assign_device,
     create_group,
     delete_group,
+    list_group_devices,
     list_groups,
     remove_device,
     rename_group,
-    list_group_devices,
 )
+from ddms.schemas.devices import DeviceOut
 from ddms.schemas.groups import GroupCreate, GroupOut, GroupUpdate
-from ddms.schemas.devices import DeviceOut
-import json
-from ddms.schemas.devices import DeviceOut
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 

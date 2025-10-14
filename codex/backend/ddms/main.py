@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from sqlalchemy.exc import SQLAlchemyError
 
 from ddms import __version__
 from ddms.api.routes import router as api_router
@@ -33,9 +34,12 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     def _bootstrap_owner() -> None:
-        # Ensure owner account exists after migrations are applied
-        with SessionLocal() as session:
-            ensure_owner_account(session, settings)
+        # Ensure owner account exists after migrations are applied; skip if DB unavailable
+        try:
+            with SessionLocal() as session:
+                ensure_owner_account(session, settings)
+        except SQLAlchemyError:
+            pass
 
     return app
 

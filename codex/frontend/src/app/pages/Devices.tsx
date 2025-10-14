@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Form, Input, InputNumber, Modal, Select, Space, Table, Tag, message } from 'antd';
+import { Button, Card, Form, Input, InputNumber, Modal, Space, Table, Tag, message } from 'antd';
 import { api } from '../../lib/api';
 import type { Device, DeviceStatus } from '../../types';
 
@@ -8,8 +8,8 @@ type DeviceForm = {
   description?: string;
   unit?: string;
   sampling_interval?: number;
-  thresholds?: Record<string, unknown>;
-  modbus_config?: Record<string, unknown>;
+  thresholds?: string | Record<string, unknown>;
+  modbus_config?: string | Record<string, unknown>;
 };
 
 export function DevicesPage(): JSX.Element {
@@ -38,13 +38,36 @@ export function DevicesPage(): JSX.Element {
   const onCreate = async () => {
     try {
       const values = await form.validateFields();
+      // Parse JSON fields if provided as string
+      let thresholds: Record<string, unknown> = {};
+      let modbus: Record<string, unknown> = {};
+      if (typeof values.thresholds === 'string' && values.thresholds.trim()) {
+        try {
+          thresholds = JSON.parse(values.thresholds);
+        } catch (_err: any) {
+          msgApi.error('Invalid thresholds JSON');
+          return;
+        }
+      } else if (values.thresholds && typeof values.thresholds === 'object') {
+        thresholds = values.thresholds as Record<string, unknown>;
+      }
+      if (typeof values.modbus_config === 'string' && values.modbus_config.trim()) {
+        try {
+          modbus = JSON.parse(values.modbus_config);
+        } catch (_err: any) {
+          msgApi.error('Invalid Modbus config JSON');
+          return;
+        }
+      } else if (values.modbus_config && typeof values.modbus_config === 'object') {
+        modbus = values.modbus_config as Record<string, unknown>;
+      }
       await api.post<Device>('/devices/', {
         name: values.name,
         description: values.description || '',
         unit: values.unit || '',
         sampling_interval: values.sampling_interval || 60,
-        thresholds: values.thresholds || {},
-        modbus_config: values.modbus_config || {},
+        thresholds,
+        modbus_config: modbus,
       });
       setOpen(false);
       form.resetFields();
@@ -131,4 +154,3 @@ export function DevicesPage(): JSX.Element {
     </Card>
   );
 }
-
