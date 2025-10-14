@@ -249,12 +249,12 @@ This roadmap sequences implementation work into clear iterations, each with deli
 
 **Requirements**:
 
-- [ ] DDMS-MON-010: Display current readings
-- [ ] DDMS-MON-020: Auto-refresh
-- [ ] DDMS-MON-030: Yellow warning indicator
-- [ ] DDMS-MON-040: Red critical indicator
-- [ ] DDMS-MON-050: Threshold markers
-- [ ] DDMS-MON-060: Color-coded regions
+- [x] DDMS-MON-010: Display current readings
+- [x] DDMS-MON-020: Auto-refresh
+- [x] DDMS-MON-030: Yellow warning indicator
+- [x] DDMS-MON-040: Red critical indicator
+- [x] DDMS-MON-050: Threshold markers
+- [x] DDMS-MON-060: Color-coded regions
 
 ---
 
