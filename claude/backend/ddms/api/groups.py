@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 
 from ddms.api.deps import CurrentUser, DbSession, ModifyUser
 from ddms.db.models import Device, Group, GroupDevice
+from ddms.schemas.device import DeviceResponse
 from ddms.schemas.group import (
     DeviceAssignmentResponse,
     GroupCreate,
@@ -56,6 +57,48 @@ async def list_groups(
         groups=groups_response,
         total=len(groups_response),
     )
+
+
+@router.get("/{group_id}/devices", response_model=list[DeviceResponse])
+async def get_group_devices(
+    group_id: int,
+    session: DbSession,
+    current_user: CurrentUser,
+) -> list[DeviceResponse]:
+    """
+    Get all devices in a group.
+
+    Args:
+        group_id: Group ID
+        session: Database session
+        current_user: Current authenticated user
+
+    Returns:
+        List of devices in the group
+
+    Raises:
+        HTTPException: If group not found
+    """
+    # Verify group exists
+    group_result = await session.execute(select(Group).where(Group.id == group_id))
+    group = group_result.scalar_one_or_none()
+
+    if group is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Group not found",
+        )
+
+    # Get devices in group
+    stmt = (
+        select(Device)
+        .join(GroupDevice, Device.id == GroupDevice.device_id)
+        .where(GroupDevice.group_id == group_id)
+    )
+    result = await session.execute(stmt)
+    devices = result.scalars().all()
+
+    return [DeviceResponse.model_validate(device) for device in devices]
 
 
 @router.post("", response_model=GroupResponse, status_code=status.HTTP_201_CREATED)

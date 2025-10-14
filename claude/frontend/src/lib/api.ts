@@ -230,6 +230,11 @@ export const groupsApi = {
     await api.delete(`/groups/${groupId}`);
   },
 
+  getDevices: async (groupId: number): Promise<Device[]> => {
+    const response = await api.get<Device[]>(`/groups/${groupId}/devices`);
+    return response.data;
+  },
+
   assignDevice: async (groupId: number, deviceId: number): Promise<void> => {
     await api.post(`/groups/${groupId}/devices/${deviceId}`);
   },

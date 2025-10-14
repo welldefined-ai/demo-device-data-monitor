@@ -17,7 +17,7 @@ import {
   Typography,
   Tag,
 } from 'antd';
-import { PlusOutlined, DeleteOutlined, LinkOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, LinkOutlined, UnorderedListOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import {
   groupsApi,
   devicesApi,
@@ -36,7 +36,9 @@ export const GroupsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
+  const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [groupDevices, setGroupDevices] = useState<Device[]>([]);
   const [form] = Form.useForm();
   const [assignForm] = Form.useForm();
   const canModify = useCanModify();
@@ -87,12 +89,39 @@ export const GroupsPage: React.FC = () => {
     if (!selectedGroup) return;
 
     try {
-      await groupsApi.assignDevice(selectedGroup, values.device_id);
+      await groupsApi.assignDevice(selectedGroup.id, values.device_id);
       message.success('Device assigned to group successfully');
       setIsAssignModalOpen(false);
       assignForm.resetFields();
       setSelectedGroup(null);
       loadData();
+    } catch (error) {
+      message.error(getErrorMessage(error));
+    }
+  };
+
+  const handleManageDevices = async (group: Group) => {
+    setSelectedGroup(group);
+    setIsManageModalOpen(true);
+    // Fetch devices in this group
+    try {
+      const devices = await groupsApi.getDevices(group.id);
+      setGroupDevices(devices);
+    } catch (error) {
+      message.error(getErrorMessage(error));
+      setGroupDevices([]);
+    }
+  };
+
+  const handleRemoveDevice = async (deviceId: number) => {
+    if (!selectedGroup) return;
+
+    try {
+      await groupsApi.removeDevice(selectedGroup.id, deviceId);
+      message.success('Device removed from group successfully');
+      loadData();
+      // Refresh the devices list in modal
+      setGroupDevices(groupDevices.filter(d => d.id !== deviceId));
     } catch (error) {
       message.error(getErrorMessage(error));
     }
@@ -126,20 +155,27 @@ export const GroupsPage: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
-      width: 250,
+      width: 350,
       render: (_: unknown, record: Group) => (
         <Space>
+          <Button
+            type="link"
+            icon={<UnorderedListOutlined />}
+            onClick={() => handleManageDevices(record)}
+          >
+            Manage Devices
+          </Button>
           {canModify && (
             <>
               <Button
                 type="link"
                 icon={<LinkOutlined />}
                 onClick={() => {
-                  setSelectedGroup(record.id);
+                  setSelectedGroup(record);
                   setIsAssignModalOpen(true);
                 }}
               >
-                Assign Device
+                Assign
               </Button>
               <Popconfirm
                 title="Delete group"
@@ -263,6 +299,54 @@ export const GroupsPage: React.FC = () => {
             </Space>
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Manage Devices Modal */}
+      <Modal
+        title={`Devices in ${selectedGroup?.name || 'Group'}`}
+        open={isManageModalOpen}
+        onCancel={() => {
+          setIsManageModalOpen(false);
+          setSelectedGroup(null);
+          setGroupDevices([]);
+        }}
+        footer={null}
+        width={600}
+      >
+        {groupDevices.length === 0 ? (
+          <Typography.Text type="secondary">No devices in this group</Typography.Text>
+        ) : (
+          <Space direction="vertical" style={{ width: '100%' }}>
+            {groupDevices.map((device) => (
+              <Card key={device.id} size="small">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Space direction="vertical" size={0}>
+                    <Typography.Text strong>{device.name}</Typography.Text>
+                    <Typography.Text type="secondary">{device.unit}</Typography.Text>
+                  </Space>
+                  {canModify && (
+                    <Popconfirm
+                      title="Remove device from group"
+                      description="Device will remain in system. Continue?"
+                      onConfirm={() => handleRemoveDevice(device.id)}
+                      okText="Yes"
+                      cancelText="No"
+                    >
+                      <Button
+                        type="link"
+                        danger
+                        icon={<MinusCircleOutlined />}
+                        size="small"
+                      >
+                        Remove
+                      </Button>
+                    </Popconfirm>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </Space>
+        )}
       </Modal>
     </Card>
   );
