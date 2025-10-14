@@ -294,9 +294,9 @@ This roadmap sequences implementation work into clear iterations, each with deli
 
 **Requirements**:
 
-- [ ] DDMS-HIST-010: Custom time range charts
-- [ ] DDMS-HIST-020: Threshold lines on history
-- [ ] DDMS-HIST-030: CSV export
+- [x] DDMS-HIST-010: Custom time range charts
+- [x] DDMS-HIST-020: Threshold lines on history
+- [x] DDMS-HIST-030: CSV export
 
 ---
 
