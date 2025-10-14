@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from ddms.db.models import Role, User
 
 
-def get_by_username(session: Session, username: str) -> Optional[User]:
+def get_by_username(session: Session, username: str) -> User | None:
     stmt = select(User).where(User.username == username)
     return session.scalar(stmt)
 
@@ -18,8 +18,20 @@ def list_users(session: Session) -> Iterable[User]:
     return session.scalars(stmt).all()
 
 
-def create_user(session: Session, *, username: str, password_hash: str, role: Role, language_preference: str = "en") -> User:
-    user = User(username=username, password_hash=password_hash, role=role, language_preference=language_preference)
+def create_user(
+    session: Session,
+    *,
+    username: str,
+    password_hash: str,
+    role: Role,
+    language_preference: str = "en",
+) -> User:
+    user = User(
+        username=username,
+        password_hash=password_hash,
+        role=role,
+        language_preference=language_preference,
+    )
     session.add(user)
     session.commit()
     session.refresh(user)
@@ -30,9 +42,9 @@ def update_user(
     session: Session,
     user: User,
     *,
-    username: Optional[str] = None,
-    password_hash: Optional[str] = None,
-    language_preference: Optional[str] = None,
+    username: str | None = None,
+    password_hash: str | None = None,
+    language_preference: str | None = None,
 ) -> User:
     if username is not None:
         user.username = username
@@ -49,4 +61,3 @@ def update_user(
 def delete_user(session: Session, user: User) -> None:
     session.delete(user)
     session.commit()
-

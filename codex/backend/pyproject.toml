@@ -24,8 +24,17 @@ dev = [
     "httpx>=0.28",
     "ruff>=0.6",
     "mypy>=1.10",
+    "types-python-jose>=3.3.4.20240106",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["ddms*"]
+exclude = ["alembic*", "tests*"]

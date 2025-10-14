@@ -2,6 +2,8 @@ name: Codex CI
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'codex/**'
       - '.github/workflows/codex-ci.yml'
@@ -9,6 +11,10 @@ on:
     paths:
       - 'codex/**'
       - '.github/workflows/codex-ci.yml'
+
+concurrency:
+  group: codex-${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
 
 jobs:
   backend:

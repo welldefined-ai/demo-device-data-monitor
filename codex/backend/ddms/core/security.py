@@ -1,12 +1,10 @@
-from typing import Any, Optional
-
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from argon2 import PasswordHasher
 from jose import jwt
 
 from ddms.core.config import Settings, get_settings
-
 
 _hasher = PasswordHasher()
 
@@ -25,10 +23,15 @@ def verify_password(password: str, hash_: str) -> bool:
         return False
 
 
-def create_jwt(payload: dict[str, Any], *, expires_in_seconds: int | None = None, settings: Optional[Settings] = None) -> str:
+def create_jwt(
+    payload: dict[str, Any],
+    *,
+    expires_in_seconds: int | None = None,
+    settings: Settings | None = None,
+) -> str:
     """Create a signed JWT with issued-at and expiration claims."""
     st = settings or get_settings()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     exp = now + timedelta(seconds=expires_in_seconds or 60 * 60 * 8)  # default 8h
     # Ensure subject is a string to satisfy JWT claim validation
     subj = payload.get("sub")
@@ -39,7 +42,7 @@ def create_jwt(payload: dict[str, Any], *, expires_in_seconds: int | None = None
     return jwt.encode(to_encode, st.secret_key, algorithm=st.jwt_algorithm)
 
 
-def decode_jwt(token: str, settings: Optional[Settings] = None) -> dict[str, Any]:
+def decode_jwt(token: str, settings: Settings | None = None) -> dict[str, Any]:
     """Decode and validate a JWT, returning its payload."""
     st = settings or get_settings()
     return jwt.decode(token, st.secret_key, algorithms=[st.jwt_algorithm])
@@ -48,7 +51,7 @@ def decode_jwt(token: str, settings: Optional[Settings] = None) -> dict[str, Any
 AUTH_COOKIE_NAME = "ddms_auth"
 
 
-def set_auth_cookie(token: str, *, settings: Optional[Settings] = None) -> dict[str, Any]:
+def set_auth_cookie(token: str, *, settings: Settings | None = None) -> dict[str, Any]:
     """Return kwargs for Response.set_cookie for the auth token."""
     st = settings or get_settings()
     # Secure only in non-development envs
@@ -65,7 +68,7 @@ def set_auth_cookie(token: str, *, settings: Optional[Settings] = None) -> dict[
     }
 
 
-def clear_auth_cookie(*, settings: Optional[Settings] = None) -> dict[str, Any]:
+def clear_auth_cookie(*, settings: Settings | None = None) -> dict[str, Any]:
     """Return kwargs to clear the auth cookie."""
     st = settings or get_settings()
     secure = st.env.lower() in {"staging", "production", "prod"}

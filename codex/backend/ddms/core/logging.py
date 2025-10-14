@@ -4,7 +4,9 @@ from typing import Literal
 _FORMAT = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
 
 
-def configure_logging(level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] | str = "INFO") -> None:
+def configure_logging(
+    level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] | str = "INFO",
+) -> None:
     """Configure application-wide logging.
 
     This function is idempotent: if logging is already configured it will only

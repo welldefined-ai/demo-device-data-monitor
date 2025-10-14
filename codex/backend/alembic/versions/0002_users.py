@@ -36,7 +36,7 @@ def downgrade() -> None:
     op.drop_table("users")
     # Note: Enum type is dropped automatically by PostgreSQL if unused; if needed:
     try:
-        sa.Enum(name="userrole").drop(op.get_bind(), checkfirst=True)  # type: ignore[arg-type]
-    except Exception:
+        enum_type = sa.Enum(name="userrole")
+        enum_type.drop(op.get_bind(), checkfirst=True)
+    except Exception:  # pragma: no cover - migration cleanup best-effort
         pass
-

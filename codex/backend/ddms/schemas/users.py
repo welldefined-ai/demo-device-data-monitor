@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -26,8 +25,8 @@ class UserCreate(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    username: Optional[str] = None
-    password: Optional[str] = None
+    username: str | None = None
+    password: str | None = None
 
 
 class LoginRequest(BaseModel):
@@ -37,4 +36,3 @@ class LoginRequest(BaseModel):
 
 class LoginResponse(BaseModel):
     user: UserOut
-

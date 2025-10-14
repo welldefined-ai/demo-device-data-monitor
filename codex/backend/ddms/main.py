@@ -5,9 +5,9 @@ from ddms.api.routes import router as api_router
 from ddms.api.routes_auth import router as auth_router
 from ddms.api.routes_users import router as users_router
 from ddms.core.config import get_settings
+from ddms.core.logging import configure_logging
 from ddms.db.session import SessionLocal
 from ddms.services.bootstrap import ensure_owner_account
-from ddms.core.logging import configure_logging
 
 
 def create_app() -> FastAPI:
@@ -15,7 +15,12 @@ def create_app() -> FastAPI:
     settings = get_settings()
     configure_logging(settings.log_level)
 
-    app = FastAPI(title="DDMS API", version=__version__, docs_url="/api/docs", openapi_url="/api/openapi.json")
+    app = FastAPI(
+        title="DDMS API",
+        version=__version__,
+        docs_url="/api/docs",
+        openapi_url="/api/openapi.json",
+    )
 
     # Include API routes under the /api prefix
     app.include_router(api_router, prefix="/api")
