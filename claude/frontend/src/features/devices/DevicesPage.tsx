@@ -31,6 +31,20 @@ import { useCanModify } from '../../store/authStore';
 const { Title } = Typography;
 const { Option } = Select;
 
+interface DeviceFormValues {
+  name: string;
+  description?: string;
+  unit: string;
+  sampling_interval: number;
+  warning_threshold?: number;
+  critical_threshold?: number;
+  modbus_type: 'tcp' | 'rtu';
+  modbus_host: string;
+  modbus_port: number;
+  modbus_register: number;
+  modbus_data_type: string;
+}
+
 export const DevicesPage: React.FC = () => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(false);
@@ -55,7 +69,7 @@ export const DevicesPage: React.FC = () => {
     }
   };
 
-  const handleCreate = async (values: any) => {
+  const handleCreate = async (values: DeviceFormValues) => {
     try {
       const deviceData: CreateDeviceRequest = {
         name: values.name,

@@ -29,22 +29,21 @@ export const DeviceDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (id) {
+      const loadDevice = async (deviceId: number) => {
+        setLoading(true);
+        try {
+          const data = await devicesApi.get(deviceId);
+          setDevice(data);
+        } catch (error) {
+          message.error(getErrorMessage(error));
+          navigate('/devices');
+        } finally {
+          setLoading(false);
+        }
+      };
       loadDevice(parseInt(id));
     }
-  }, [id]);
-
-  const loadDevice = async (deviceId: number) => {
-    setLoading(true);
-    try {
-      const data = await devicesApi.get(deviceId);
-      setDevice(data);
-    } catch (error) {
-      message.error(getErrorMessage(error));
-      navigate('/devices');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [id, navigate]);
 
   const handleTestConnection = async () => {
     if (!device) return;

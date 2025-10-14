@@ -268,9 +268,7 @@ async def assign_device_to_group(
     session.add(assignment)
     await session.commit()
 
-    logger.info(
-        f"User {current_user.username} assigned device {device.name} to group {group.name}"
-    )
+    logger.info(f"User {current_user.username} assigned device {device.name} to group {group.name}")
 
     return DeviceAssignmentResponse(
         message="Device assigned to group successfully",
@@ -314,6 +312,4 @@ async def remove_device_from_group(
     await session.delete(assignment)
     await session.commit()
 
-    logger.info(
-        f"User {current_user.username} removed device {device_id} from group {group_id}"
-    )
+    logger.info(f"User {current_user.username} removed device {device_id} from group {group_id}")

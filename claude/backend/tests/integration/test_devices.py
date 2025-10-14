@@ -49,9 +49,7 @@ def test_create_device_as_owner(client: TestClient, owner_token: str) -> None:
     assert "id" in data
 
 
-def test_create_device_as_viewer_forbidden(
-    client: TestClient, viewer_user, db_session
-) -> None:
+def test_create_device_as_viewer_forbidden(client: TestClient, viewer_user, db_session) -> None:
     """Test that viewers cannot create devices."""
     # Login as viewer
     response = client.post(
@@ -65,7 +63,13 @@ def test_create_device_as_viewer_forbidden(
         "name": "Test Device",
         "unit": "bar",
         "sampling_interval": 30,
-        "modbus_config": {"type": "tcp", "host": "localhost", "port": 502, "register": 1, "data_type": "int16"},
+        "modbus_config": {
+            "type": "tcp",
+            "host": "localhost",
+            "port": 502,
+            "register": 1,
+            "data_type": "int16",
+        },
     }
 
     response = client.post(
@@ -84,7 +88,13 @@ def test_get_device_details(client: TestClient, owner_token: str) -> None:
         "name": "Pressure Sensor",
         "unit": "bar",
         "sampling_interval": 30,
-        "modbus_config": {"type": "tcp", "host": "192.168.1.101", "port": 502, "register": 40002, "data_type": "int16"},
+        "modbus_config": {
+            "type": "tcp",
+            "host": "192.168.1.101",
+            "port": 502,
+            "register": 40002,
+            "data_type": "int16",
+        },
     }
     create_response = client.post(
         "/api/devices",
@@ -114,7 +124,13 @@ def test_update_device(client: TestClient, owner_token: str) -> None:
             "name": "Original Name",
             "unit": "RPM",
             "sampling_interval": 60,
-            "modbus_config": {"type": "tcp", "host": "localhost", "port": 502, "register": 1, "data_type": "int16"},
+            "modbus_config": {
+                "type": "tcp",
+                "host": "localhost",
+                "port": 502,
+                "register": 1,
+                "data_type": "int16",
+            },
         },
         cookies={"access_token": owner_token},
     )
@@ -142,7 +158,13 @@ def test_delete_device(client: TestClient, owner_token: str) -> None:
             "name": "To Delete",
             "unit": "%",
             "sampling_interval": 60,
-            "modbus_config": {"type": "tcp", "host": "localhost", "port": 502, "register": 1, "data_type": "int16"},
+            "modbus_config": {
+                "type": "tcp",
+                "host": "localhost",
+                "port": 502,
+                "register": 1,
+                "data_type": "int16",
+            },
         },
         cookies={"access_token": owner_token},
     )
@@ -173,7 +195,13 @@ def test_test_connection_endpoint(client: TestClient, owner_token: str) -> None:
             "name": "Connection Test",
             "unit": "°C",
             "sampling_interval": 60,
-            "modbus_config": {"type": "tcp", "host": "localhost", "port": 502, "register": 1, "data_type": "float32"},
+            "modbus_config": {
+                "type": "tcp",
+                "host": "localhost",
+                "port": 502,
+                "register": 1,
+                "data_type": "float32",
+            },
         },
         cookies={"access_token": owner_token},
     )

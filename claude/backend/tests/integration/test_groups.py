@@ -36,9 +36,7 @@ def test_create_group_as_owner(client: TestClient, owner_token: str) -> None:
     assert "id" in data
 
 
-def test_create_group_as_viewer_forbidden(
-    client: TestClient, viewer_user, db_session
-) -> None:
+def test_create_group_as_viewer_forbidden(client: TestClient, viewer_user, db_session) -> None:
     """Test that viewers cannot create groups."""
     # Login as viewer
     response = client.post(
@@ -108,7 +106,13 @@ def test_assign_device_to_group(client: TestClient, owner_token: str) -> None:
             "name": "Test Device",
             "unit": "°C",
             "sampling_interval": 60,
-            "modbus_config": {"type": "tcp", "host": "localhost", "port": 502, "register": 1, "data_type": "int16"},
+            "modbus_config": {
+                "type": "tcp",
+                "host": "localhost",
+                "port": 502,
+                "register": 1,
+                "data_type": "int16",
+            },
         },
         cookies={"access_token": owner_token},
     )
@@ -144,7 +148,13 @@ def test_single_group_constraint(client: TestClient, owner_token: str) -> None:
             "name": "Single Group Device",
             "unit": "bar",
             "sampling_interval": 30,
-            "modbus_config": {"type": "tcp", "host": "localhost", "port": 502, "register": 1, "data_type": "int16"},
+            "modbus_config": {
+                "type": "tcp",
+                "host": "localhost",
+                "port": 502,
+                "register": 1,
+                "data_type": "int16",
+            },
         },
         cookies={"access_token": owner_token},
     )
@@ -191,7 +201,13 @@ def test_remove_device_from_group(client: TestClient, owner_token: str) -> None:
             "name": "Remove Test Device",
             "unit": "RPM",
             "sampling_interval": 60,
-            "modbus_config": {"type": "tcp", "host": "localhost", "port": 502, "register": 1, "data_type": "int16"},
+            "modbus_config": {
+                "type": "tcp",
+                "host": "localhost",
+                "port": 502,
+                "register": 1,
+                "data_type": "int16",
+            },
         },
         cookies={"access_token": owner_token},
     )
@@ -228,7 +244,13 @@ def test_delete_group_cascades_assignments(client: TestClient, owner_token: str)
             "name": "Cascade Test Device",
             "unit": "°C",
             "sampling_interval": 60,
-            "modbus_config": {"type": "tcp", "host": "localhost", "port": 502, "register": 1, "data_type": "int16"},
+            "modbus_config": {
+                "type": "tcp",
+                "host": "localhost",
+                "port": 502,
+                "register": 1,
+                "data_type": "int16",
+            },
         },
         cookies={"access_token": owner_token},
     )
@@ -291,10 +313,16 @@ def test_device_count_in_groups_list(client: TestClient, owner_token: str) -> No
         device_response = client.post(
             "/api/devices",
             json={
-                "name": f"Device {i+1}",
+                "name": f"Device {i + 1}",
                 "unit": "°C",
                 "sampling_interval": 60,
-                "modbus_config": {"type": "tcp", "host": "localhost", "port": 502, "register": i+1, "data_type": "int16"},
+                "modbus_config": {
+                    "type": "tcp",
+                    "host": "localhost",
+                    "port": 502,
+                    "register": i + 1,
+                    "data_type": "int16",
+                },
             },
             cookies={"access_token": owner_token},
         )
