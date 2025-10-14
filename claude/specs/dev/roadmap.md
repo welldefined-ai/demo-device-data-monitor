@@ -117,6 +117,7 @@ This roadmap sequences implementation work into clear iterations, each with deli
   - `POST /api/groups` - Create group (admin/owner)
   - `PATCH /api/groups/{id}` - Update group name (admin/owner)
   - `DELETE /api/groups/{id}` - Delete group (admin/owner)
+  - `GET /api/groups/{id}/devices` - List devices in group
   - `POST /api/groups/{id}/devices/{device_id}` - Assign device to group (admin/owner)
   - `DELETE /api/groups/{id}/devices/{device_id}` - Remove device from group (admin/owner)
 
@@ -128,6 +129,7 @@ This roadmap sequences implementation work into clear iterations, each with deli
 - Groups list page
 - Group creation/edit form
 - Device assignment interface (enforce single group per device)
+- Device removal from group interface
 
 ### Acceptance
 
@@ -139,27 +141,28 @@ This roadmap sequences implementation work into clear iterations, each with deli
 - View device detail showing status (offline initially, no readings yet)
 - Create multiple groups and assign devices
 - Attempt to assign device to second group, verify error message
+- View devices in group and remove a device from group
 - Delete device, verify it's removed from list but historical data remains
 
 **Requirements**:
 
-- [ ] DDMS-CON-010: Monitoring device model
-- [ ] DDMS-CON-020: Device groups and assignment
-- [ ] DDMS-DEV-010: Add/edit devices
-- [ ] DDMS-DEV-011: Device name/description
-- [ ] DDMS-DEV-012: Reading units
-- [ ] DDMS-DEV-013: Sampling interval
-- [ ] DDMS-DEV-014: Modbus configuration
-- [ ] DDMS-DEV-020: Threshold rules
-- [ ] DDMS-DEV-030: Delete devices
-- [ ] DDMS-DEV-031: Retain historical readings
-- [ ] DDMS-DEV-040: Connection status display
-- [ ] DDMS-DEV-041: Last reading timestamp
-- [ ] DDMS-DEV-042: Error indicators
-- [ ] DDMS-GRP-010: Create groups
-- [ ] DDMS-GRP-020: Rename groups
-- [ ] DDMS-GRP-030: Delete groups
-- [ ] DDMS-GRP-040: Assign devices (single group)
+- [x] DDMS-CON-010: Monitoring device model
+- [x] DDMS-CON-020: Device groups and assignment
+- [x] DDMS-DEV-010: Add/edit devices
+- [x] DDMS-DEV-011: Device name/description
+- [x] DDMS-DEV-012: Reading units
+- [x] DDMS-DEV-013: Sampling interval
+- [x] DDMS-DEV-014: Modbus configuration
+- [x] DDMS-DEV-020: Threshold rules
+- [x] DDMS-DEV-030: Delete devices
+- [x] DDMS-DEV-031: Retain historical readings
+- [x] DDMS-DEV-040: Connection status display
+- [x] DDMS-DEV-041: Last reading timestamp
+- [x] DDMS-DEV-042: Error indicators
+- [x] DDMS-GRP-010: Create groups
+- [x] DDMS-GRP-020: Rename groups
+- [x] DDMS-GRP-030: Delete groups
+- [x] DDMS-GRP-040: Assign devices (single group)
 
 ---
 

@@ -6,6 +6,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from ddms.api.auth import router as auth_router
+from ddms.api.devices import router as devices_router
+from ddms.api.groups import router as groups_router
 from ddms.api.health import router as health_router
 from ddms.api.users import router as users_router
 from ddms.core.config import settings
@@ -38,6 +40,8 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(users_router)
+app.include_router(devices_router)
+app.include_router(groups_router)
 
 
 @app.on_event("startup")

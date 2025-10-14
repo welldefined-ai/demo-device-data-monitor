@@ -9,6 +9,9 @@ import { LoginPage } from '../features/auth/LoginPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { UsersPage } from '../features/users/UsersPage';
 import { ProfilePage } from '../features/profile/ProfilePage';
+import { DevicesPage } from '../features/devices/DevicesPage';
+import { DeviceDetailPage } from '../features/devices/DeviceDetailPage';
+import { GroupsPage } from '../features/groups/GroupsPage';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { AppLayout } from '../components/AppLayout';
 import { useAuthStore } from '../store/authStore';
@@ -33,6 +36,13 @@ function App() {
             <Route element={<AppLayout />}>
               {/* Dashboard - accessible to all authenticated users */}
               <Route path="/" element={<DashboardPage />} />
+
+              {/* Devices - accessible to all authenticated users */}
+              <Route path="/devices" element={<DevicesPage />} />
+              <Route path="/devices/:id" element={<DeviceDetailPage />} />
+
+              {/* Groups - accessible to all authenticated users */}
+              <Route path="/groups" element={<GroupsPage />} />
 
               {/* Profile - accessible to all authenticated users */}
               <Route path="/profile" element={<ProfilePage />} />
