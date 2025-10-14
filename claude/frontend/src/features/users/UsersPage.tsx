@@ -18,6 +18,7 @@ import {
   Tag,
 } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { usersApi, User, getErrorMessage, CreateUserRequest } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 
@@ -25,6 +26,7 @@ const { Title } = Typography;
 const { Option } = Select;
 
 export const UsersPage: React.FC = () => {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -84,35 +86,35 @@ export const UsersPage: React.FC = () => {
 
   const columns = [
     {
-      title: 'ID',
+      title: t('users.id'),
       dataIndex: 'id',
       key: 'id',
       width: 80,
     },
     {
-      title: 'Username',
+      title: t('users.username'),
       dataIndex: 'username',
       key: 'username',
     },
     {
-      title: 'Role',
+      title: t('users.role'),
       dataIndex: 'role',
       key: 'role',
-      render: (role: string) => <Tag color={getRoleColor(role)}>{role.toUpperCase()}</Tag>,
+      render: (role: string) => <Tag color={getRoleColor(role)}>{t(`users.${role}`)}</Tag>,
     },
     {
-      title: 'Language',
+      title: t('users.language'),
       dataIndex: 'language_preference',
       key: 'language_preference',
     },
     {
-      title: 'Created At',
+      title: t('users.createdAt'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => new Date(date).toLocaleString(),
     },
     {
-      title: 'Actions',
+      title: t('users.actions'),
       key: 'actions',
       render: (_: unknown, record: User) => {
         const canDelete = record.id !== currentUser?.id && record.role !== 'owner';
@@ -123,16 +125,16 @@ export const UsersPage: React.FC = () => {
                 title="Delete user"
                 description="Are you sure you want to delete this user?"
                 onConfirm={() => handleDelete(record.id)}
-                okText="Yes"
-                cancelText="No"
+                okText={t('common.yes')}
+                cancelText={t('common.no')}
               >
                 <Button type="link" danger icon={<DeleteOutlined />}>
-                  Delete
+                  {t('users.delete')}
                 </Button>
               </Popconfirm>
             ) : (
               <Button type="link" disabled>
-                Cannot Delete
+                {t('users.cannotDelete')}
               </Button>
             )}
           </Space>
@@ -144,13 +146,13 @@ export const UsersPage: React.FC = () => {
   return (
     <Card>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-        <Title level={3}>User Management</Title>
+        <Title level={3}>{t('users.title')}</Title>
         <Button
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => setIsModalOpen(true)}
         >
-          Create User
+          {t('users.createUser')}
         </Button>
       </div>
 
@@ -163,7 +165,7 @@ export const UsersPage: React.FC = () => {
       />
 
       <Modal
-        title="Create New User"
+        title={t('users.createNewUser')}
         open={isModalOpen}
         onCancel={() => {
           setIsModalOpen(false);
@@ -179,7 +181,7 @@ export const UsersPage: React.FC = () => {
         >
           <Form.Item
             name="username"
-            label="Username"
+            label={t('users.username')}
             rules={[
               { required: true, message: 'Please input username!' },
               { min: 3, message: 'Username must be at least 3 characters' },
@@ -190,7 +192,7 @@ export const UsersPage: React.FC = () => {
 
           <Form.Item
             name="password"
-            label="Password"
+            label={t('users.password')}
             rules={[
               { required: true, message: 'Please input password!' },
               { min: 5, message: 'Password must be at least 5 characters' },
@@ -201,18 +203,18 @@ export const UsersPage: React.FC = () => {
 
           <Form.Item
             name="role"
-            label="Role"
+            label={t('users.role')}
             rules={[{ required: true, message: 'Please select a role!' }]}
           >
             <Select>
-              <Option value="viewer">Viewer</Option>
-              <Option value="admin">Admin</Option>
+              <Option value="viewer">{t('users.viewer')}</Option>
+              <Option value="admin">{t('users.admin')}</Option>
             </Select>
           </Form.Item>
 
           <Form.Item
             name="language_preference"
-            label="Language Preference"
+            label={t('users.languagePreference')}
             rules={[{ required: true }]}
           >
             <Select>
@@ -223,9 +225,9 @@ export const UsersPage: React.FC = () => {
 
           <Form.Item>
             <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-              <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
+              <Button onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
               <Button type="primary" htmlType="submit">
-                Create
+                {t('common.create')}
               </Button>
             </Space>
           </Form.Item>

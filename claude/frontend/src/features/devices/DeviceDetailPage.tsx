@@ -16,11 +16,13 @@ import {
   Divider,
 } from 'antd';
 import { ArrowLeftOutlined, ApiOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { devicesApi, Device, getErrorMessage } from '../../lib/api';
 
 const { Title } = Typography;
 
 export const DeviceDetailPage: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [device, setDevice] = useState<Device | null>(null);
@@ -91,7 +93,7 @@ export const DeviceDetailPage: React.FC = () => {
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
       <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/devices')}>
-        Back to Devices
+        {t('devices.backToDevices')}
       </Button>
 
       <Card
@@ -100,7 +102,7 @@ export const DeviceDetailPage: React.FC = () => {
             <Title level={3} style={{ margin: 0 }}>
               {device.name}
             </Title>
-            <Tag color={getStatusColor(device.status)}>{device.status.toUpperCase()}</Tag>
+            <Tag color={getStatusColor(device.status)}>{t(`devices.${device.status}`)}</Tag>
           </Space>
         }
         extra={
@@ -109,60 +111,60 @@ export const DeviceDetailPage: React.FC = () => {
             onClick={handleTestConnection}
             loading={testing}
           >
-            Test Connection
+            {t('devices.testConnection')}
           </Button>
         }
       >
         <Descriptions column={2} bordered>
-          <Descriptions.Item label="ID">{device.id}</Descriptions.Item>
-          <Descriptions.Item label="Unit">{device.unit}</Descriptions.Item>
-          <Descriptions.Item label="Sampling Interval">
+          <Descriptions.Item label={t('devices.id')}>{device.id}</Descriptions.Item>
+          <Descriptions.Item label={t('devices.unit')}>{device.unit}</Descriptions.Item>
+          <Descriptions.Item label={t('devices.samplingInterval')}>
             {device.sampling_interval} seconds
           </Descriptions.Item>
-          <Descriptions.Item label="Status">
-            <Tag color={getStatusColor(device.status)}>{device.status.toUpperCase()}</Tag>
+          <Descriptions.Item label={t('devices.status')}>
+            <Tag color={getStatusColor(device.status)}>{t(`devices.${device.status}`)}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Last Reading" span={2}>
+          <Descriptions.Item label={t('devices.lastReading')} span={2}>
             {device.last_reading_at
               ? new Date(device.last_reading_at).toLocaleString()
-              : 'No readings yet'}
+              : t('devices.noReadingsYet')}
           </Descriptions.Item>
-          <Descriptions.Item label="Description" span={2}>
+          <Descriptions.Item label={t('devices.description')} span={2}>
             {device.description || '-'}
           </Descriptions.Item>
         </Descriptions>
 
-        <Divider>Thresholds</Divider>
+        <Divider>{t('devices.thresholds')}</Divider>
         <Descriptions column={2} bordered>
-          <Descriptions.Item label="Warning Threshold">
+          <Descriptions.Item label={t('devices.warningThreshold')}>
             {device.thresholds?.warning ?? '-'}
           </Descriptions.Item>
-          <Descriptions.Item label="Critical Threshold">
+          <Descriptions.Item label={t('devices.criticalThreshold')}>
             {device.thresholds?.critical ?? '-'}
           </Descriptions.Item>
         </Descriptions>
 
-        <Divider>Modbus Configuration</Divider>
+        <Divider>{t('devices.modbusConfiguration')}</Divider>
         <Descriptions column={2} bordered>
-          <Descriptions.Item label="Type">
-            {device.modbus_config.type.toUpperCase()}
+          <Descriptions.Item label={t('devices.type')}>
+            {t(`devices.modbusType.${device.modbus_config.type}`)}
           </Descriptions.Item>
-          <Descriptions.Item label="Host">{device.modbus_config.host}</Descriptions.Item>
-          <Descriptions.Item label="Port">{device.modbus_config.port}</Descriptions.Item>
-          <Descriptions.Item label="Register">
+          <Descriptions.Item label={t('devices.host')}>{device.modbus_config.host}</Descriptions.Item>
+          <Descriptions.Item label={t('devices.port')}>{device.modbus_config.port}</Descriptions.Item>
+          <Descriptions.Item label={t('devices.registerAddress')}>
             {device.modbus_config.register}
           </Descriptions.Item>
-          <Descriptions.Item label="Data Type" span={2}>
+          <Descriptions.Item label={t('devices.dataType')} span={2}>
             {device.modbus_config.data_type}
           </Descriptions.Item>
         </Descriptions>
 
         <Divider />
         <Descriptions column={2} bordered size="small">
-          <Descriptions.Item label="Created">
+          <Descriptions.Item label={t('devices.created')}>
             {new Date(device.created_at).toLocaleString()}
           </Descriptions.Item>
-          <Descriptions.Item label="Updated">
+          <Descriptions.Item label={t('devices.updated')}>
             {new Date(device.updated_at).toLocaleString()}
           </Descriptions.Item>
         </Descriptions>

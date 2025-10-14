@@ -5,6 +5,7 @@
 import React from 'react';
 import { Card, Form, Input, Button, message, Typography, Select, Space } from 'antd';
 import { LockOutlined, GlobalOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { usersApi, getErrorMessage, UpdateUserRequest } from '../../lib/api';
 
@@ -12,6 +13,7 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 
 export const ProfilePage: React.FC = () => {
+  const { t } = useTranslation();
   const { user, checkAuth } = useAuthStore();
   const [passwordForm] = Form.useForm();
   const [preferencesForm] = Form.useForm();
@@ -54,18 +56,18 @@ export const ProfilePage: React.FC = () => {
   return (
     <Space direction="vertical" size="large" style={{ width: '100%', maxWidth: 800 }}>
       <Card>
-        <Title level={3}>Profile Settings</Title>
+        <Title level={3}>{t('profile.title')}</Title>
         <Space direction="vertical" size="small">
-          <Text strong>Username:</Text>
+          <Text strong>{t('profile.username')}:</Text>
           <Text>{user.username}</Text>
-          <Text strong style={{ marginTop: 8 }}>Role:</Text>
-          <Text>{user.role.toUpperCase()}</Text>
-          <Text strong style={{ marginTop: 8 }}>Account Created:</Text>
+          <Text strong style={{ marginTop: 8 }}>{t('profile.role')}:</Text>
+          <Text>{t(`users.${user.role}`)}</Text>
+          <Text strong style={{ marginTop: 8 }}>{t('profile.accountCreated')}:</Text>
           <Text>{new Date(user.created_at).toLocaleString()}</Text>
         </Space>
       </Card>
 
-      <Card title="Change Password">
+      <Card title={t('profile.changePassword')}>
         <Form
           form={passwordForm}
           layout="vertical"
@@ -74,7 +76,7 @@ export const ProfilePage: React.FC = () => {
         >
           <Form.Item
             name="password"
-            label="New Password"
+            label={t('profile.newPassword')}
             rules={[
               { required: true, message: 'Please input your new password!' },
               { min: 5, message: 'Password must be at least 5 characters' },
@@ -89,7 +91,7 @@ export const ProfilePage: React.FC = () => {
 
           <Form.Item
             name="confirmPassword"
-            label="Confirm Password"
+            label={t('profile.confirmPassword')}
             dependencies={['password']}
             rules={[
               { required: true, message: 'Please confirm your password!' },
@@ -98,7 +100,7 @@ export const ProfilePage: React.FC = () => {
                   if (!value || getFieldValue('password') === value) {
                     return Promise.resolve();
                   }
-                  return Promise.reject(new Error('Passwords do not match!'));
+                  return Promise.reject(new Error(t('profile.passwordsDoNotMatch')));
                 },
               }),
             ]}
@@ -112,13 +114,13 @@ export const ProfilePage: React.FC = () => {
 
           <Form.Item>
             <Button type="primary" htmlType="submit">
-              Update Password
+              {t('profile.updatePassword')}
             </Button>
           </Form.Item>
         </Form>
       </Card>
 
-      <Card title="Language Preferences">
+      <Card title={t('profile.languagePreferences')}>
         <Form
           form={preferencesForm}
           layout="vertical"
@@ -128,7 +130,7 @@ export const ProfilePage: React.FC = () => {
         >
           <Form.Item
             name="language_preference"
-            label="Language"
+            label={t('profile.language')}
             rules={[{ required: true, message: 'Please select a language!' }]}
           >
             <Select prefix={<GlobalOutlined />}>
@@ -139,7 +141,7 @@ export const ProfilePage: React.FC = () => {
 
           <Form.Item>
             <Button type="primary" htmlType="submit">
-              Update Language
+              {t('profile.updateLanguage')}
             </Button>
           </Form.Item>
         </Form>
