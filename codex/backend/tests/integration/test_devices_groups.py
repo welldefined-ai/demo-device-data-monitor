@@ -66,3 +66,71 @@ def test_devices_crud_and_groups(client: TestClient) -> None:
     dd = client.delete(f"/api/devices/{dev_id}")
     assert dd.status_code == HTTPStatus.OK
 
+
+def test_device_name_conflict(client: TestClient) -> None:
+    login_owner(client)
+    d1 = client.post(
+        "/api/devices/",
+        json={
+            "name": "devDup",
+            "description": "",
+            "unit": "bar",
+            "sampling_interval": 10,
+            "thresholds": {},
+            "modbus_config": {},
+        },
+    )
+    assert d1.status_code == HTTPStatus.CREATED, d1.text
+    d2 = client.post(
+        "/api/devices/",
+        json={
+            "name": "devDup",
+            "description": "",
+            "unit": "bar",
+            "sampling_interval": 10,
+            "thresholds": {},
+            "modbus_config": {},
+        },
+    )
+    assert d2.status_code == HTTPStatus.CONFLICT
+
+
+def test_devices_404s(client: TestClient) -> None:
+    login_owner(client)
+    missing = 999999
+    g = client.get(f"/api/devices/{missing}")
+    assert g.status_code == HTTPStatus.NOT_FOUND
+    p = client.patch(f"/api/devices/{missing}", json={"unit": "X"})
+    assert p.status_code == HTTPStatus.NOT_FOUND
+    d = client.delete(f"/api/devices/{missing}")
+    assert d.status_code == HTTPStatus.NOT_FOUND
+
+
+def test_groups_404s(client: TestClient) -> None:
+    login_owner(client)
+    # Missing group delete
+    mg = client.delete("/api/groups/999999")
+    assert mg.status_code == HTTPStatus.NOT_FOUND
+    # Create valid device and group, then test missing counterpart
+    dev = client.post(
+        "/api/devices/",
+        json={
+            "name": "devX",
+            "description": "",
+            "unit": "rpm",
+            "sampling_interval": 5,
+            "thresholds": {},
+            "modbus_config": {},
+        },
+    )
+    assert dev.status_code == HTTPStatus.CREATED
+    dev_id = dev.json()["id"]
+    grp = client.post("/api/groups/", json={"name": "GrpX", "description": ""})
+    assert grp.status_code == HTTPStatus.CREATED
+    grp_id = grp.json()["id"]
+    # Missing device for assign
+    asg_missing_device = client.post(f"/api/groups/{grp_id}/devices/999999")
+    assert asg_missing_device.status_code == HTTPStatus.NOT_FOUND
+    # Missing group for assign
+    asg_missing_group = client.post(f"/api/groups/999999/devices/{dev_id}")
+    assert asg_missing_group.status_code == HTTPStatus.NOT_FOUND
