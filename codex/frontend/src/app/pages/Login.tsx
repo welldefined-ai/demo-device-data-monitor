@@ -4,16 +4,19 @@ import { useAuth } from '../../store/auth';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export function LoginPage(): JSX.Element {
-  const { login, error, loading } = useAuth();
+  const { login, error } = useAuth();
   const [form] = Form.useForm();
   const [localError, setLocalError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const loc = useLocation() as any;
 
   const onFinish = async () => {
     const { username, password } = await form.validateFields();
     setLocalError(null);
+    setSubmitting(true);
     const ok = await login(username, password);
+    setSubmitting(false);
     if (ok) {
       const dest = loc.state?.from?.pathname ?? '/';
       navigate(dest, { replace: true });
@@ -35,7 +38,7 @@ export function LoginPage(): JSX.Element {
           <Form.Item name="password" label="Password" rules={[{ required: true }]}>
             <Input.Password autoComplete="current-password" />
           </Form.Item>
-          <Button type="primary" htmlType="submit" block loading={loading}>
+          <Button type="primary" htmlType="submit" block loading={submitting}>
             Sign in
           </Button>
         </Form>
@@ -43,4 +46,3 @@ export function LoginPage(): JSX.Element {
     </div>
   );
 }
-

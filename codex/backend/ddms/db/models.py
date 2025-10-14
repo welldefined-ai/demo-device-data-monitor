@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import DateTime, Integer, String, func
+from sqlalchemy import DateTime, Float, Integer, String, func
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -90,3 +90,12 @@ class GroupDevice(Base):
 
     group_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     device_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=False)
+
+
+class Reading(Base):
+    __tablename__ = "readings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    device_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    value: Mapped[float] = mapped_column(Float(asdecimal=False), nullable=False)

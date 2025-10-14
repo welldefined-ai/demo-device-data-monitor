@@ -1,3 +1,5 @@
+from contextlib import suppress
+
 from fastapi import FastAPI
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -10,7 +12,9 @@ from ddms.api.routes_users import router as users_router
 from ddms.core.config import get_settings
 from ddms.core.logging import configure_logging
 from ddms.db.session import SessionLocal
+from ddms.scheduler.manager import IngestionScheduler
 from ddms.services.bootstrap import ensure_owner_account
+from ddms.services.dev_seed import ensure_demo_device
 
 
 def create_app() -> FastAPI:
@@ -32,14 +36,30 @@ def create_app() -> FastAPI:
     app.include_router(devices_router, prefix="/api")
     app.include_router(groups_router, prefix="/api")
 
+    # Initialize scheduler
+    app.state.scheduler = IngestionScheduler(SessionLocal)
+
     @app.on_event("startup")
-    def _bootstrap_owner() -> None:
+    def _startup() -> None:
         # Ensure owner account exists after migrations are applied; skip if DB unavailable
         try:
             with SessionLocal() as session:
                 ensure_owner_account(session, settings)
         except SQLAlchemyError:
             pass
+        # Start scheduler (rebuilt here to honor any runtime SessionLocal patches)
+        with suppress(Exception):
+            app.state.scheduler = IngestionScheduler(SessionLocal)
+            app.state.scheduler.start()
+            app.state.scheduler.refresh_all_jobs()
+        # Dev seed (optional)
+        with suppress(Exception), SessionLocal() as session:
+            ensure_demo_device(session, settings, app.state.scheduler)
+
+    @app.on_event("shutdown")
+    def _shutdown() -> None:
+        with suppress(Exception):
+            app.state.scheduler.shutdown()
 
     return app
 

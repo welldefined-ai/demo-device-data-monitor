@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import json
 import socket
+from contextlib import suppress
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
 from sqlalchemy import select
 
 from ddms.api.deps import SessionDep, require_roles
@@ -15,12 +16,14 @@ from ddms.db.repositories.devices import (
     list_devices,
     update_device,
 )
+from ddms.db.repositories.readings import list_recent_readings
 from ddms.schemas.devices import (
     DeviceCreate,
     DeviceOut,
     DeviceUpdate,
     TestConnectionResponse,
 )
+from ddms.schemas.readings import ReadingOut
 
 router = APIRouter(prefix="/devices", tags=["devices"])
 
@@ -40,7 +43,9 @@ def devices_list(session: SessionDep) -> list[DeviceOut]:
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_roles(Role.ADMIN, Role.OWNER))],
 )
-def devices_create(payload: DeviceCreate, session: SessionDep) -> DeviceOut:
+def devices_create(
+    payload: DeviceCreate, session: SessionDep, request: Request
+) -> DeviceOut:
     if session.scalar(select(Device.id).where(Device.name == payload.name)):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Device name already exists"
@@ -54,6 +59,9 @@ def devices_create(payload: DeviceCreate, session: SessionDep) -> DeviceOut:
         thresholds=payload.thresholds,
         modbus_config=payload.modbus_config,
     )
+    # Schedule polling job for this device (best-effort)
+    with suppress(Exception):
+        request.app.state.scheduler.add_or_update_device_job(d.id, d.sampling_interval)
     return device_to_out(d)
 
 
@@ -71,7 +79,10 @@ def devices_get(session: SessionDep, device_id: int = Path(..., ge=1)) -> Device
     dependencies=[Depends(require_roles(Role.ADMIN, Role.OWNER))],
 )
 def devices_patch(
-    payload: DeviceUpdate, session: SessionDep, device_id: int = Path(..., ge=1)
+    payload: DeviceUpdate,
+    session: SessionDep,
+    request: Request,
+    device_id: int = Path(..., ge=1),
 ) -> DeviceOut:
     d = get_device(session, device_id)
     if not d:
@@ -86,14 +97,24 @@ def devices_patch(
         thresholds=payload.thresholds,
         modbus_config=payload.modbus_config,
     )
+    # Reschedule if interval changed or on any update (idempotent, best-effort)
+    with suppress(Exception):
+        request.app.state.scheduler.add_or_update_device_job(updated.id, updated.sampling_interval)
     return device_to_out(updated)
 
 
-@router.delete("/{device_id}", dependencies=[Depends(require_roles(Role.ADMIN, Role.OWNER))])
-def devices_delete(session: SessionDep, device_id: int = Path(..., ge=1)) -> dict[str, bool]:
+@router.delete(
+    "/{device_id}", dependencies=[Depends(require_roles(Role.ADMIN, Role.OWNER))]
+)
+def devices_delete(
+    session: SessionDep, request: Request, device_id: int = Path(..., ge=1)
+) -> dict[str, bool]:
     d = get_device(session, device_id)
     if not d:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
+    # Remove scheduled job if any (best-effort)
+    with suppress(Exception):
+        request.app.state.scheduler.remove_device_job(d.id)
     delete_device(session, d)
     return {"ok": True}
 
@@ -146,3 +167,22 @@ def device_to_out(d: Device) -> DeviceOut:
         created_at=d.created_at,
         updated_at=d.updated_at,
     )
+
+
+@router.get(
+    "/{device_id}/readings/current",
+    response_model=list[ReadingOut],
+    summary="Get recent readings for a device",
+    dependencies=[Depends(require_roles(Role.ADMIN, Role.OWNER, Role.VIEWER))],
+)
+def devices_current_readings(
+    session: SessionDep,
+    device_id: int = Path(..., ge=1),
+    limit: int = 20,
+) -> list[ReadingOut]:
+    d = get_device(session, device_id)
+    if not d:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
+    rows = list_recent_readings(session, device_id=device_id, limit=min(max(limit, 1), 100))
+    # return in descending order as fetched; client can reverse if needed
+    return [ReadingOut.model_validate(r) for r in rows]
