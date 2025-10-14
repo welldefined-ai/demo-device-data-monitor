@@ -19,13 +19,12 @@ interface Reading {
 
 export const HistoryPage: React.FC = () => {
   const [devices, setDevices] = useState<Device[]>([]);
-  const [selectedDeviceId, setSelectedDeviceId] = useState<number | null>(null);
-  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [selectedDeviceIds, setSelectedDeviceIds] = useState<number[]>([]);
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
-    dayjs().subtract(1, 'hour'),
-    dayjs(),
+    dayjs().subtract(1, 'day').startOf('day'),
+    dayjs().endOf('day'),
   ]);
-  const [readings, setReadings] = useState<Reading[]>([]);
+  const [deviceReadings, setDeviceReadings] = useState<Map<number, Reading[]>>(new Map());
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -33,20 +32,18 @@ export const HistoryPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedDeviceId) {
-      const device = devices.find(d => d.id === selectedDeviceId);
-      setSelectedDevice(device || null);
+    if (selectedDeviceIds.length > 0) {
       loadHistoricalData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDeviceId, dateRange]);
+  }, [selectedDeviceIds, dateRange]);
 
   const loadDevices = async () => {
     try {
       const response = await devicesApi.list();
       setDevices(response.devices);
       if (response.devices.length > 0) {
-        setSelectedDeviceId(response.devices[0].id);
+        setSelectedDeviceIds([response.devices[0].id]);
       }
     } catch (error) {
       message.error(getErrorMessage(error));
@@ -54,107 +51,158 @@ export const HistoryPage: React.FC = () => {
   };
 
   const loadHistoricalData = async () => {
-    if (!selectedDeviceId) return;
+    if (selectedDeviceIds.length === 0) return;
 
     setLoading(true);
+    const newReadings = new Map<number, Reading[]>();
+
     try {
       const start = dateRange[0].toISOString();
       const end = dateRange[1].toISOString();
 
-      const res = await fetch(
-        `/api/devices/${selectedDeviceId}/readings/history?start=${start}&end=${end}`,
-        { credentials: 'include' }
+      // Fetch data for all selected devices in parallel
+      await Promise.all(
+        selectedDeviceIds.map(async (deviceId) => {
+          try {
+            const res = await fetch(
+              `/api/devices/${deviceId}/readings/history?start=${start}&end=${end}`,
+              { credentials: 'include' }
+            );
+
+            if (!res.ok) {
+              if (res.status === 500) {
+                throw new Error('Server error occurred. Please try again.');
+              }
+              const errorData = await res.json().catch(() => ({ detail: 'Unknown error' }));
+              throw new Error(errorData.detail || `Error ${res.status}`);
+            }
+
+            const response = await res.json();
+            if (response.readings) {
+              newReadings.set(deviceId, response.readings);
+            }
+          } catch (error) {
+            console.error(`Error loading device ${deviceId}:`, error);
+          }
+        })
       );
 
-      if (!res.ok) {
-        if (res.status === 500) {
-          throw new Error('Server error occurred. Please try again.');
-        }
-        const errorData = await res.json().catch(() => ({ detail: 'Unknown error' }));
-        throw new Error(errorData.detail || `Error ${res.status}`);
-      }
-
-      const response = await res.json();
-
-      if (response.readings) {
-        setReadings(response.readings);
-      } else {
-        setReadings([]);
-      }
+      setDeviceReadings(newReadings);
     } catch (error) {
       message.error(getErrorMessage(error));
-      setReadings([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleExport = () => {
-    if (!selectedDeviceId) return;
+    if (selectedDeviceIds.length === 0) return;
 
     const start = dateRange[0].toISOString();
     const end = dateRange[1].toISOString();
 
-    const url = `/api/devices/${selectedDeviceId}/readings/export?start=${start}&end=${end}`;
+    // Export first selected device
+    const url = `/api/devices/${selectedDeviceIds[0]}/readings/export?start=${start}&end=${end}`;
     window.open(url, '_blank');
     message.success('Export started');
   };
 
   const getChartOption = () => {
-    if (!selectedDevice) return {};
+    if (selectedDeviceIds.length === 0 || deviceReadings.size === 0) return {};
 
-    const thresholds = selectedDevice.thresholds;
-    const data = readings.map(r => ({
-      time: dayjs(r.timestamp).format('MM-DD HH:mm:ss'),
-      value: r.value,
+    // Group devices by unit to determine Y-axes
+    const unitGroups = new Map<string, number[]>();
+    selectedDeviceIds.forEach(id => {
+      const device = devices.find(d => d.id === id);
+      if (device) {
+        if (!unitGroups.has(device.unit)) {
+          unitGroups.set(device.unit, []);
+        }
+        unitGroups.get(device.unit)!.push(id);
+      }
+    });
+
+    // Create Y-axes (max 2 for readability)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const yAxes: any[] = Array.from(unitGroups.keys()).slice(0, 2).map((unit, index) => ({
+      type: 'value',
+      name: unit,
+      position: index === 0 ? 'left' : 'right',
+      axisLabel: { fontSize: 11 },
     }));
 
+    // Create series for each device with colored segments based on thresholds
+    const colors = ['#1890ff', '#52c41a', '#faad14', '#ff4d4f', '#722ed1', '#13c2c2'];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const markLine: any = {
-      data: [],
-      symbol: 'none',
-      label: { show: true, position: 'insideEndTop', fontSize: 12 },
-    };
+    const series: any[] = [];
 
-    if (thresholds?.warning) {
-      markLine.data.push({
-        yAxis: thresholds.warning,
-        lineStyle: { color: '#faad14', width: 2, type: 'dashed' },
-        label: { formatter: 'Warning' },
-      });
-    }
+    selectedDeviceIds.forEach((deviceId, index) => {
+      const device = devices.find(d => d.id === deviceId);
+      const readings = deviceReadings.get(deviceId);
 
-    if (thresholds?.critical) {
-      markLine.data.push({
-        yAxis: thresholds.critical,
-        lineStyle: { color: '#ff4d4f', width: 2, type: 'dashed' },
-        label: { formatter: 'Critical' },
+      if (!device || !readings) return;
+
+      // Determine which Y-axis to use
+      const yAxisIndex = Array.from(unitGroups.keys()).indexOf(device.unit);
+
+      // Color curve segments based on thresholds
+      const data = readings.map(r => {
+        let color = colors[index % colors.length];
+        if (device.thresholds) {
+          if (device.thresholds.critical && r.value >= device.thresholds.critical) {
+            color = '#ff4d4f'; // Red
+          } else if (device.thresholds.warning && r.value >= device.thresholds.warning) {
+            color = '#faad14'; // Yellow
+          } else {
+            color = '#52c41a'; // Green
+          }
+        }
+        return { value: r.value, itemStyle: { color } };
       });
-    }
+
+      series.push({
+        name: device.name,
+        type: 'line',
+        yAxisIndex: Math.min(yAxisIndex, yAxes.length - 1),
+        data,
+        smooth: true,
+        lineStyle: { width: 2 },
+        emphasis: { focus: 'series' },
+      });
+    });
+
+    // Get all unique timestamps
+    const allTimestamps = new Set<string>();
+    deviceReadings.forEach(readings => {
+      readings.forEach(r => allTimestamps.add(dayjs(r.timestamp).format('MM-DD HH:mm')));
+    });
+    const timestamps = Array.from(allTimestamps).sort();
 
     return {
       title: {
-        text: `${selectedDevice.name} - Historical Trends`,
+        text: 'Historical Trends',
         left: 'center',
+      },
+      legend: {
+        data: selectedDeviceIds.map(id => devices.find(d => d.id === id)?.name || ''),
+        top: 30,
       },
       grid: {
         left: 60,
-        right: 40,
-        top: 60,
-        bottom: 60,
+        right: yAxes.length > 1 ? 60 : 40,
+        top: 80,
+        bottom: 80,
       },
       xAxis: {
         type: 'category',
-        data: data.map(d => d.time),
+        data: timestamps,
         axisLabel: {
           rotate: 45,
-          interval: Math.max(1, Math.floor(data.length / 10)),
+          interval: Math.max(1, Math.floor(timestamps.length / 15)),
+          fontSize: 10,
         },
       },
-      yAxis: {
-        type: 'value',
-        name: selectedDevice.unit,
-      },
+      yAxis: yAxes,
       dataZoom: [
         {
           type: 'inside',
@@ -166,38 +214,10 @@ export const HistoryPage: React.FC = () => {
           end: 100,
         },
       ],
-      visualMap: thresholds
-        ? {
-            show: false,
-            pieces: [
-              { lte: thresholds.warning || 0, color: 'rgba(82, 196, 26, 0.2)' },
-              {
-                gt: thresholds.warning || 0,
-                lte: thresholds.critical || 0,
-                color: 'rgba(250, 173, 20, 0.2)',
-              },
-              { gt: thresholds.critical || 0, color: 'rgba(255, 77, 79, 0.2)' },
-            ],
-            dimension: 1,
-          }
-        : undefined,
-      series: [
-        {
-          data: data.map(d => d.value),
-          type: 'line',
-          smooth: true,
-          lineStyle: { width: 2 },
-          areaStyle: {},
-          markLine: markLine.data.length > 0 ? markLine : undefined,
-        },
-      ],
+      series,
       tooltip: {
         trigger: 'axis',
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        formatter: (params: any) => {
-          const point = params[0];
-          return `${point.axisValue}<br/>Value: ${point.value} ${selectedDevice.unit}`;
-        },
+        axisPointer: { type: 'cross' },
       },
     };
   };
@@ -211,10 +231,12 @@ export const HistoryPage: React.FC = () => {
 
         <Space wrap>
           <Select
-            style={{ width: 250 }}
-            placeholder="Select device"
-            value={selectedDeviceId}
-            onChange={setSelectedDeviceId}
+            mode="multiple"
+            style={{ minWidth: 300 }}
+            placeholder="Select devices"
+            value={selectedDeviceIds}
+            onChange={setSelectedDeviceIds}
+            maxTagCount="responsive"
             options={devices.map(d => ({
               value: d.id,
               label: `${d.name} (${d.unit})`,
@@ -222,19 +244,22 @@ export const HistoryPage: React.FC = () => {
           />
 
           <RangePicker
-            showTime
             value={dateRange}
             onChange={(dates) => {
               if (dates && dates[0] && dates[1]) {
-                setDateRange([dates[0], dates[1]]);
+                setDateRange([
+                  dates[0].startOf('day'),
+                  dates[1].endOf('day'),
+                ]);
               }
             }}
+            format="YYYY-MM-DD"
           />
 
           <Button
             icon={<DownloadOutlined />}
             onClick={handleExport}
-            disabled={!selectedDeviceId || readings.length === 0}
+            disabled={selectedDeviceIds.length === 0 || deviceReadings.size === 0}
           >
             Export CSV
           </Button>
@@ -244,7 +269,7 @@ export const HistoryPage: React.FC = () => {
           <div style={{ textAlign: 'center', padding: 50 }}>
             <Spin size="large" tip="Loading historical data..." />
           </div>
-        ) : readings.length === 0 ? (
+        ) : deviceReadings.size === 0 ? (
           <div style={{ textAlign: 'center', padding: 50, color: '#999' }}>
             No data available for selected time range
           </div>
@@ -256,10 +281,11 @@ export const HistoryPage: React.FC = () => {
           />
         )}
 
-        {!loading && readings.length > 0 && (
+        {!loading && deviceReadings.size > 0 && (
           <div style={{ textAlign: 'center', color: '#999', fontSize: 12 }}>
-            {readings.length} readings from {dayjs(readings[0].timestamp).format('YYYY-MM-DD HH:mm:ss')} to{' '}
-            {dayjs(readings[readings.length - 1].timestamp).format('YYYY-MM-DD HH:mm:ss')}
+            {selectedDeviceIds.length} device(s) selected •{' '}
+            {Array.from(deviceReadings.values()).reduce((sum, r) => sum + r.length, 0)} total readings •{' '}
+            {dateRange[0].format('YYYY-MM-DD')} to {dateRange[1].format('YYYY-MM-DD')}
           </div>
         )}
       </Space>
