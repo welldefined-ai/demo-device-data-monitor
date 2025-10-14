@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import delete, insert, select, update
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from ddms.db.models import Device, Group, GroupDevice
@@ -19,7 +19,9 @@ def create_group(session: Session, *, name: str, description: str = "") -> Group
     return g
 
 
-def rename_group(session: Session, group: Group, *, name: str | None = None, description: str | None = None) -> Group:
+def rename_group(
+    session: Session, group: Group, *, name: str | None = None, description: str | None = None
+) -> Group:
     if name is not None:
         group.name = name
     if description is not None:
@@ -46,7 +48,8 @@ def assign_device(session: Session, group: Group, device: Device) -> None:
 
 def remove_device(session: Session, group: Group, device: Device) -> None:
     session.execute(
-        delete(GroupDevice).where(GroupDevice.group_id == group.id, GroupDevice.device_id == device.id)
+        delete(GroupDevice).where(
+            GroupDevice.group_id == group.id, GroupDevice.device_id == device.id
+        )
     )
     session.commit()
-

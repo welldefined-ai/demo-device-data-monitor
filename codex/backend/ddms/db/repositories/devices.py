@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+import json
 from typing import Any
 
 from sqlalchemy import delete, select
@@ -18,7 +18,7 @@ def get_device(session: Session, device_id: int) -> Device | None:
     return session.get(Device, device_id)
 
 
-def create_device(
+def create_device(  # noqa: PLR0913
     session: Session,
     *,
     name: str,
@@ -43,7 +43,7 @@ def create_device(
     return d
 
 
-def update_device(
+def update_device(  # noqa: PLR0913
     session: Session,
     device: Device,
     *,
@@ -83,7 +83,4 @@ def delete_device(session: Session, device: Device) -> None:
 
 
 def json_dumps(data: dict[str, Any]) -> str:
-    import json
-
     return json.dumps(data, separators=(",", ":"))
-

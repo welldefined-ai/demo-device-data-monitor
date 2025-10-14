@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+import socket
 
 from fastapi import APIRouter, Depends, HTTPException, Path, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
 
 from ddms.api.deps import SessionDep, require_roles
-from ddms.db.models import Device, DeviceStatus, Role
+from ddms.db.models import Device, Role
 from ddms.db.repositories.devices import (
     create_device,
     delete_device,
@@ -15,15 +15,23 @@ from ddms.db.repositories.devices import (
     list_devices,
     update_device,
 )
-from ddms.schemas.devices import DeviceCreate, DeviceOut, DeviceUpdate, TestConnectionResponse
-
+from ddms.schemas.devices import (
+    DeviceCreate,
+    DeviceOut,
+    DeviceUpdate,
+    TestConnectionResponse,
+)
 
 router = APIRouter(prefix="/devices", tags=["devices"])
 
 
-@router.get("/", response_model=list[DeviceOut], dependencies=[Depends(require_roles(Role.ADMIN, Role.OWNER, Role.VIEWER))])
+@router.get(
+    "/",
+    response_model=list[DeviceOut],
+    dependencies=[Depends(require_roles(Role.ADMIN, Role.OWNER, Role.VIEWER))],
+)
 def devices_list(session: SessionDep) -> list[DeviceOut]:
-    return [DeviceOut.model_validate(d) for d in list_devices(session)]
+    return [device_to_out(d) for d in list_devices(session)]
 
 
 @router.post(
@@ -33,8 +41,10 @@ def devices_list(session: SessionDep) -> list[DeviceOut]:
     dependencies=[Depends(require_roles(Role.ADMIN, Role.OWNER))],
 )
 def devices_create(payload: DeviceCreate, session: SessionDep) -> DeviceOut:
-    if session.scalar(Session.query(Device).where(Device.name == payload.name)):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Device name already exists")
+    if session.scalar(select(Device.id).where(Device.name == payload.name)):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Device name already exists"
+        )
     d = create_device(
         session,
         name=payload.name,
@@ -44,7 +54,7 @@ def devices_create(payload: DeviceCreate, session: SessionDep) -> DeviceOut:
         thresholds=payload.thresholds,
         modbus_config=payload.modbus_config,
     )
-    return DeviceOut.model_validate(d)
+    return device_to_out(d)
 
 
 @router.get("/{device_id}", response_model=DeviceOut)
@@ -52,11 +62,17 @@ def devices_get(session: SessionDep, device_id: int = Path(..., ge=1)) -> Device
     d = get_device(session, device_id)
     if not d:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
-    return DeviceOut.model_validate(d)
+    return device_to_out(d)
 
 
-@router.patch("/{device_id}", response_model=DeviceOut, dependencies=[Depends(require_roles(Role.ADMIN, Role.OWNER))])
-def devices_patch(payload: DeviceUpdate, session: SessionDep, device_id: int = Path(..., ge=1)) -> DeviceOut:
+@router.patch(
+    "/{device_id}",
+    response_model=DeviceOut,
+    dependencies=[Depends(require_roles(Role.ADMIN, Role.OWNER))],
+)
+def devices_patch(
+    payload: DeviceUpdate, session: SessionDep, device_id: int = Path(..., ge=1)
+) -> DeviceOut:
     d = get_device(session, device_id)
     if not d:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
@@ -70,7 +86,7 @@ def devices_patch(payload: DeviceUpdate, session: SessionDep, device_id: int = P
         thresholds=payload.thresholds,
         modbus_config=payload.modbus_config,
     )
-    return DeviceOut.model_validate(updated)
+    return device_to_out(updated)
 
 
 @router.delete("/{device_id}", dependencies=[Depends(require_roles(Role.ADMIN, Role.OWNER))])
@@ -83,7 +99,9 @@ def devices_delete(session: SessionDep, device_id: int = Path(..., ge=1)) -> dic
 
 
 @router.post("/{device_id}/test-connection", response_model=TestConnectionResponse)
-def devices_test_connection(session: SessionDep, device_id: int = Path(..., ge=1)) -> TestConnectionResponse:
+def devices_test_connection(
+    session: SessionDep, device_id: int = Path(..., ge=1)
+) -> TestConnectionResponse:
     d = get_device(session, device_id)
     if not d:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
@@ -102,8 +120,6 @@ def devices_test_connection(session: SessionDep, device_id: int = Path(..., ge=1
 
 
 def _ping_tcp(host: str, port: int) -> bool:
-    import socket
-
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.settimeout(1.5)
         try:
@@ -112,3 +128,21 @@ def _ping_tcp(host: str, port: int) -> bool:
         except Exception:
             return False
 
+
+def device_to_out(d: Device) -> DeviceOut:
+    # Expand JSON fields for API response
+    thresholds = json.loads(d.thresholds or "{}")
+    modbus_config = json.loads(d.modbus_config or "{}")
+    return DeviceOut(
+        id=d.id,
+        name=d.name,
+        description=d.description,
+        unit=d.unit,
+        sampling_interval=d.sampling_interval,
+        thresholds=thresholds,
+        modbus_config=modbus_config,
+        status=d.status,
+        last_reading_at=d.last_reading_at,
+        created_at=d.created_at,
+        updated_at=d.updated_at,
+    )

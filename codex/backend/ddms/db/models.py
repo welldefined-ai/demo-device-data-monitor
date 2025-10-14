@@ -53,9 +53,11 @@ class Device(Base):
     description: Mapped[str] = mapped_column(String(512), nullable=False, default="")
     unit: Mapped[str] = mapped_column(String(32), nullable=False, default="")
     sampling_interval: Mapped[int] = mapped_column(Integer, nullable=False, default=60)
-    thresholds: Mapped[str] = mapped_column(String, nullable=False, default='{"warning": null, "critical": null}')
+    thresholds: Mapped[str] = mapped_column(
+        String, nullable=False, default='{"warning": null, "critical": null}'
+    )
     modbus_config: Mapped[str] = mapped_column(String, nullable=False, default='{}')
-    status: Mapped["DeviceStatus"] = mapped_column(
+    status: Mapped[DeviceStatus] = mapped_column(
         SAEnum(DeviceStatus, name="devicestatus", values_callable=lambda e: [x.value for x in e]),
         nullable=False,
         default=DeviceStatus.OFFLINE,
