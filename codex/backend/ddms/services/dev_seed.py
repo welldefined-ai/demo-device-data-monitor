@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import suppress
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -41,8 +43,5 @@ def ensure_demo_device(
         },
     )
     if scheduler is not None:
-        try:
+        with suppress(Exception):
             scheduler.add_or_update_device_job(d.id, d.sampling_interval)
-        except Exception:
-            pass
-

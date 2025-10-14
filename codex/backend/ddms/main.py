@@ -1,3 +1,5 @@
+from contextlib import suppress
+
 from fastapi import FastAPI
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -10,8 +12,8 @@ from ddms.api.routes_users import router as users_router
 from ddms.core.config import get_settings
 from ddms.core.logging import configure_logging
 from ddms.db.session import SessionLocal
-from ddms.services.bootstrap import ensure_owner_account
 from ddms.scheduler.manager import IngestionScheduler
+from ddms.services.bootstrap import ensure_owner_account
 from ddms.services.dev_seed import ensure_demo_device
 
 
@@ -46,26 +48,18 @@ def create_app() -> FastAPI:
         except SQLAlchemyError:
             pass
         # Start scheduler (rebuilt here to honor any runtime SessionLocal patches)
-        try:
+        with suppress(Exception):
             app.state.scheduler = IngestionScheduler(SessionLocal)
             app.state.scheduler.start()
             app.state.scheduler.refresh_all_jobs()
-        except Exception:
-            # Do not fail app startup because of scheduler issues
-            pass
         # Dev seed (optional)
-        try:
-            with SessionLocal() as session:
-                ensure_demo_device(session, settings, app.state.scheduler)
-        except Exception:
-            pass
+        with suppress(Exception), SessionLocal() as session:
+            ensure_demo_device(session, settings, app.state.scheduler)
 
     @app.on_event("shutdown")
     def _shutdown() -> None:
-        try:
+        with suppress(Exception):
             app.state.scheduler.shutdown()
-        except Exception:
-            pass
 
     return app
 

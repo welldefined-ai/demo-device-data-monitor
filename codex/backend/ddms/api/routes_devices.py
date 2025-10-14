@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import socket
+from contextlib import suppress
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
 from sqlalchemy import select
@@ -15,6 +16,7 @@ from ddms.db.repositories.devices import (
     list_devices,
     update_device,
 )
+from ddms.db.repositories.readings import list_recent_readings
 from ddms.schemas.devices import (
     DeviceCreate,
     DeviceOut,
@@ -22,7 +24,6 @@ from ddms.schemas.devices import (
     TestConnectionResponse,
 )
 from ddms.schemas.readings import ReadingOut
-from ddms.db.repositories.readings import list_recent_readings
 
 router = APIRouter(prefix="/devices", tags=["devices"])
 
@@ -42,7 +43,9 @@ def devices_list(session: SessionDep) -> list[DeviceOut]:
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_roles(Role.ADMIN, Role.OWNER))],
 )
-def devices_create(payload: DeviceCreate, session: SessionDep, request: Request) -> DeviceOut:
+def devices_create(
+    payload: DeviceCreate, session: SessionDep, request: Request
+) -> DeviceOut:
     if session.scalar(select(Device.id).where(Device.name == payload.name)):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Device name already exists"
@@ -56,11 +59,9 @@ def devices_create(payload: DeviceCreate, session: SessionDep, request: Request)
         thresholds=payload.thresholds,
         modbus_config=payload.modbus_config,
     )
-    # Schedule polling job for this device
-    try:
-        request.app.state.scheduler.add_or_update_device_job(d.id, d.sampling_interval)  # type: ignore[attr-defined]
-    except Exception:
-        pass
+    # Schedule polling job for this device (best-effort)
+    with suppress(Exception):
+        request.app.state.scheduler.add_or_update_device_job(d.id, d.sampling_interval)
     return device_to_out(d)
 
 
@@ -78,7 +79,10 @@ def devices_get(session: SessionDep, device_id: int = Path(..., ge=1)) -> Device
     dependencies=[Depends(require_roles(Role.ADMIN, Role.OWNER))],
 )
 def devices_patch(
-    payload: DeviceUpdate, session: SessionDep, request: Request, device_id: int = Path(..., ge=1)
+    payload: DeviceUpdate,
+    session: SessionDep,
+    request: Request,
+    device_id: int = Path(..., ge=1),
 ) -> DeviceOut:
     d = get_device(session, device_id)
     if not d:
@@ -93,24 +97,24 @@ def devices_patch(
         thresholds=payload.thresholds,
         modbus_config=payload.modbus_config,
     )
-    # Reschedule if interval changed or on any update (idempotent)
-    try:
-        request.app.state.scheduler.add_or_update_device_job(updated.id, updated.sampling_interval)  # type: ignore[attr-defined]
-    except Exception:
-        pass
+    # Reschedule if interval changed or on any update (idempotent, best-effort)
+    with suppress(Exception):
+        request.app.state.scheduler.add_or_update_device_job(updated.id, updated.sampling_interval)
     return device_to_out(updated)
 
 
-@router.delete("/{device_id}", dependencies=[Depends(require_roles(Role.ADMIN, Role.OWNER))])
-def devices_delete(session: SessionDep, request: Request, device_id: int = Path(..., ge=1)) -> dict[str, bool]:
+@router.delete(
+    "/{device_id}", dependencies=[Depends(require_roles(Role.ADMIN, Role.OWNER))]
+)
+def devices_delete(
+    session: SessionDep, request: Request, device_id: int = Path(..., ge=1)
+) -> dict[str, bool]:
     d = get_device(session, device_id)
     if not d:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
-    # Remove scheduled job if any
-    try:
-        request.app.state.scheduler.remove_device_job(d.id)  # type: ignore[attr-defined]
-    except Exception:
-        pass
+    # Remove scheduled job if any (best-effort)
+    with suppress(Exception):
+        request.app.state.scheduler.remove_device_job(d.id)
     delete_device(session, d)
     return {"ok": True}
 

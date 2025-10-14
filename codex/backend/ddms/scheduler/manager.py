@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from contextlib import suppress
 
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.schedulers.background import BackgroundScheduler  # type: ignore[import-untyped]
+from apscheduler.triggers.interval import IntervalTrigger  # type: ignore[import-untyped]
 from sqlalchemy.orm import Session, sessionmaker
 
 from ddms.db.models import Device
@@ -50,11 +50,9 @@ class IngestionScheduler:
 
     def remove_device_job(self, device_id: int) -> None:
         job_id = self._job_id(device_id)
-        try:
+        with suppress(Exception):  # pragma: no cover - harmless if not present
             self._scheduler.remove_job(job_id)
             logger.info("Removed schedule for device %s", device_id)
-        except Exception:  # pragma: no cover - harmless if not present
-            pass
 
     def refresh_all_jobs(self) -> None:
         """Load all devices and ensure jobs reflect sampling intervals."""
@@ -64,4 +62,3 @@ class IngestionScheduler:
                 self.add_or_update_device_job(d.id, d.sampling_interval)
         finally:
             session.close()
-
