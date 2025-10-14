@@ -1,0 +1,28 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    Anything to update in specs/?
+  timestamp: '2025-10-14T13:26:35Z'
+  log_uri: 'codex-cli:2025/10/14/rollout-2025-10-14T18-52-45-0199e259-e2f0-7b02-a507-dfc55406662a.jsonl'
+- role: assistant
+  content: |
+    Yes — I updated specs to reflect Iteration 3.
+
+    What changed
+    - Roadmap: mark completed Iteration 3 requirements
+      - specs/dev/roadmap.md:200
+      - Marked done: DDMS-DATA-010/011/020, DDMS-PROTO-010/011/012
+      - Left unchecked: DDMS-MON-020 (auto-refresh UI comes with Iteration 4)
+
+    - Architecture: document dev simulator and scheduler
+      - specs/dev/architecture.md:1
+      - Added dev-only Modbus TCP simulator component and noted APScheduler-powered polling
+      - Mentioned optional demo device auto-seed via `DDMS_DEV_AUTOCONFIG=1`
+
+    Commit
+    - 12.1-docs(roadmap): mark Iteration 3 items complete
+
+    If you want, I can also add a brief “Local Dev” section to testing.md describing the simulator-backed manual flow.
+  timestamp: '2025-10-14T13:28:43Z'
+  log_uri: 'codex-cli:2025/10/14/rollout-2025-10-14T18-52-45-0199e259-e2f0-7b02-a507-dfc55406662a.jsonl'
