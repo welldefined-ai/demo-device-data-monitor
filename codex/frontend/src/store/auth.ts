@@ -21,7 +21,7 @@ type AuthState = {
   logout: () => Promise<void>;
 };
 
-export const useAuth = create<AuthState>((set, get) => ({
+export const useAuth = create<AuthState>((set, _get) => ({
   user: null,
   loading: false,
   error: null,
@@ -51,4 +51,3 @@ export const useAuth = create<AuthState>((set, get) => ({
     set({ user: null });
   },
 }));
-

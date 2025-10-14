@@ -1,8 +1,11 @@
 from fastapi import FastAPI
+from sqlalchemy.exc import SQLAlchemyError
 
 from ddms import __version__
 from ddms.api.routes import router as api_router
 from ddms.api.routes_auth import router as auth_router
+from ddms.api.routes_devices import router as devices_router
+from ddms.api.routes_groups import router as groups_router
 from ddms.api.routes_users import router as users_router
 from ddms.core.config import get_settings
 from ddms.core.logging import configure_logging
@@ -26,12 +29,17 @@ def create_app() -> FastAPI:
     app.include_router(api_router, prefix="/api")
     app.include_router(auth_router, prefix="/api")
     app.include_router(users_router, prefix="/api")
+    app.include_router(devices_router, prefix="/api")
+    app.include_router(groups_router, prefix="/api")
 
     @app.on_event("startup")
     def _bootstrap_owner() -> None:
-        # Ensure owner account exists after migrations are applied
-        with SessionLocal() as session:
-            ensure_owner_account(session, settings)
+        # Ensure owner account exists after migrations are applied; skip if DB unavailable
+        try:
+            with SessionLocal() as session:
+                ensure_owner_account(session, settings)
+        except SQLAlchemyError:
+            pass
 
     return app
 
