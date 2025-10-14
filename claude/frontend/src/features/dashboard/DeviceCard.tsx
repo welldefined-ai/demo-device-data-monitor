@@ -30,8 +30,9 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const readings = await fetch(`/api/devices/${device.id}/readings/current?limit=20`)
-          .then(res => res.json());
+        const readings = await fetch(`/api/devices/${device.id}/readings/current?limit=20`, {
+          credentials: 'include',
+        }).then(res => res.json());
 
         if (readings.readings) {
           const data = readings.readings.reverse().map((r: { timestamp: string; value: number }) => ({

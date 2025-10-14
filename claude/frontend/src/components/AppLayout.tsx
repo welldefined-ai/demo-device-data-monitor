@@ -12,6 +12,7 @@ import {
   DashboardOutlined,
   DatabaseOutlined,
   GroupOutlined,
+  LineChartOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuthStore, useIsAdmin } from '../store/authStore';
@@ -65,6 +66,11 @@ export const AppLayout: React.FC = () => {
       key: '/groups',
       icon: <GroupOutlined />,
       label: 'Groups',
+    },
+    {
+      key: '/history',
+      icon: <LineChartOutlined />,
+      label: 'History',
     },
     ...(isAdmin
       ? [
