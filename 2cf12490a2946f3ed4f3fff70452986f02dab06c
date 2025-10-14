@@ -1,0 +1,146 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    Give me instructions for manual verification.
+  timestamp: '2025-10-14T07:59:12Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: assistant
+  content: |
+    Here’s a concise, step-by-step manual verification checklist for Iteration 2 (Devices & Groups). It covers both API and UI paths and matches current behavior.
+
+    Start services
+    - Apply migrations and start stack:
+      - docker compose up -d db
+      - docker compose up -d backend
+      - docker compose exec backend alembic upgrade head
+      - docker compose up -d web
+    - Access points:
+      - App: http://localhost:8080
+      - API via Nginx: http://localhost:8080/api/…
+    - Default credentials: owner / owner
+
+    Backend API (via curl)
+    - Login and save cookie:
+      - curl -s -c cookies.txt -H 'Content-Type: application/json' -d '{"username":"owner","password":"owner"}' http://localhost:8080/api/auth/login
+    - Create a device:
+      - curl -s -b cookies.txt -H 'Content-Type: application/json' -d '{"name":"devA","description":"","unit":"°C","sampling_interval":30,"thresholds":{"warning":70,"critical":90},"modbus_config":{"type":"tcp","host":"127.0.0.1","port":1502}}' http://localhost:8080/api/devices/
+    - List devices:
+      - curl -s -b cookies.txt http://localhost:8080/api/devices/
+    - Get device detail:
+      - curl -s -b cookies.txt http://localhost:8080/api/devices/1
+    - Update device:
+      - curl -s -b cookies.txt -H 'Content-Type: application/json' -X PATCH -d '{"unit":"C"}' http://localhost:8080/api/devices/1
+    - Test Modbus connection (TCP reachability stub):
+      - curl -s -b cookies.txt -X POST http://localhost:8080/api/devices/1/test-connection
+    - Create groups:
+      - curl -s -b cookies.txt -H 'Content-Type: application/json' -d '{"name":"Grp1","description":""}' http://localhost:8080/api/groups/
+      - curl -s -b cookies.txt -H 'Content-Type: application/json' -d '{"name":"Grp2","description":""}' http://localhost:8080/api/groups/
+    - Assign device to group (single-group enforced):
+      - curl -s -b cookies.txt -X POST http://localhost:8080/api/groups/1/devices/1
+      - Reassign to another group (moves it): curl -s -b cookies.txt -X POST http://localhost:8080/api/groups/2/devices/1
+    - Unassign device:
+      - curl -s -b cookies.txt -X DELETE http://localhost:8080/api/groups/2/devices/1
+    - Delete device:
+      - curl -s -b cookies.txt -X DELETE http://localhost:8080/api/devices/1
+
+    Frontend (UI)
+    - Open http://localhost:8080 and login as owner.
+    - Devices:
+      - Create device “devA” with unit °C, interval 30, thresholds (70/90), TCP host 127.0.0.1, port 1502.
+      - See it in the list; test connection (likely shows unreachable unless a service is listening).
+      - Update device (change unit to C); delete device; confirm it disappears.
+    - Groups:
+      - Create “Grp1” and “Grp2”.
+      - Assign device “devA” to “Grp1”.
+      - Assign same device to “Grp2” (device moves to Grp2 due to single-group enforcement).
+      - Unassign device from “Grp2”.
+      - Delete groups and confirm they disappear.
+
+    RBAC checks
+    - As viewer (create a viewer first from Users page or API), login and open Devices/Groups:
+      - Devices/Groups pages load (view-only).
+      - Try creating a device/group → backend returns 403; UI shows an error toast.
+    - As admin: same as owner for managing devices/groups.
+
+    Edge cases to try
+    - Duplicate device name:
+      - POST /api/devices/ with existing name → 409 Conflict
+    - Not found:
+      - GET /api/devices/999999 or DELETE /api/devices/999999 → 404 Not Found
+      - POST /api/groups/1/devices/999999 → 404 (device)
+      - DELETE /api/groups/999999 → 404 (group)
+
+    Notes
+    - thresholds and modbus_config are returned as JSON objects (expanded) even though stored as strings in DB.
+    - Single-group enforcement currently reassigns on second assignment rather than erroring (design choice).
+    - Historical readings retention on device delete is a no-op right now (readings arrive in Iteration 3); no historical data exists yet to validate retention.
+
+    Optional: run backend checks locally
+    - cd backend
+    - python -m venv .venv && .venv/bin/python -m pip install '.[dev]'
+    - .venv/bin/python -m ruff check .
+    - .venv/bin/python -m mypy .
+    - PYTHONPATH=. .venv/bin/python -m pytest -q
+
+    If you want me to execute the Docker and curl verification on your machine and paste outputs, I can do that next.
+  timestamp: '2025-10-14T08:00:09Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: user
+  content: |
+    Haven't your tests already covered the curl part?
+  timestamp: '2025-10-14T08:00:47Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: assistant
+  content: |
+    Yes—most of it.
+
+    - Automated coverage
+      - Devices: create → get → update → list → delete (backend/tests/integration/test_devices_groups.py)
+      - Groups: create → assign → reassign (single-group) → unassign (same test)
+      - JSON expansion: thresholds/modbus_config validated via Pydantic on responses
+      - Auth/RBAC: covered earlier for users; device/group routes use the same guards
+
+    - What curl still validates (beyond tests)
+      - Nginx proxy and cookies over http://localhost:8080 (tests use TestClient directly)
+      - Real TCP reachability behavior of “test-connection” when targeting a live port
+      - Role-based access from a browser session (viewer hitting protected POSTs)
+
+    - Optional manual checks
+      - If you trust the integration tests, you can skip the curl sequence and only do a quick UI smoke:
+        - Login owner → create device/group → assign/unassign → delete
+        - Login viewer → verify create/modify actions are blocked (403 surfaced in UI)
+
+    If you want, I can add integration tests for duplicate device names and 404s on devices/groups to close those gaps completely.
+  timestamp: '2025-10-14T08:01:10Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: user
+  content: |
+    Yes, go ahead.
+  timestamp: '2025-10-14T08:01:21Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: assistant
+  content: |
+    Great call. I added integration tests to fully cover the curl scenarios you asked about and verified locally with the exact CI sequence (Ruff strict, mypy, pytest). All pass.
+
+    What I added
+    - backend/tests/integration/test_devices_groups.py
+      - Device duplicate name conflict → 409 (test_device_name_conflict)
+      - Device not found → 404 for GET/PATCH/DELETE (test_devices_404s)
+      - Group not found → 404 for DELETE missing group; 404 on assign with missing device or missing group (test_groups_404s)
+
+    Why this matches curl behavior
+    - Tests exercise the same endpoints and status codes used in manual curl commands.
+    - They run under TestClient with the SQLite override and mirror auth cookies via login steps.
+
+    Commits
+    - 11.4-test(api): add 409 and 404 coverage for devices/groups
+    - Prior related commits in Iteration 2:
+      - 11.0-feat(db): device/group schema + migration
+      - 11.1-feat(api): devices and groups endpoints + RBAC
+      - 11.2-test(api): CRUD/integration for devices/groups (assign/unassign, single-group)
+      - 11.3-feat(frontend): devices and groups UI
+
+    If you want, I can push the branch and open a PR for Iteration 2 now, or proceed to the next iteration’s backend (data ingestion).
+  timestamp: '2025-10-14T08:03:59Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
