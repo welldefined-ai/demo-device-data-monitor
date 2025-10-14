@@ -12,6 +12,7 @@ from ddms.api.health import router as health_router
 from ddms.api.users import router as users_router
 from ddms.core.config import settings
 from ddms.core.logging import setup_logging
+from ddms.realtime.websocket import router as websocket_router
 
 # Initialize logging
 setup_logging()
@@ -42,6 +43,7 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(devices_router)
 app.include_router(groups_router)
+app.include_router(websocket_router)
 
 
 @app.on_event("startup")

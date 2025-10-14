@@ -1,77 +1,108 @@
 /**
- * Dashboard home page
+ * Real-time monitoring dashboard
  */
 
-import React from 'react';
-import { Card, Typography, Space, Tag } from 'antd';
-import { useAuthStore } from '../../store/authStore';
+import React, { useEffect, useState } from 'react';
+import { Row, Col, Typography, Empty } from 'antd';
+import { DeviceCard } from './DeviceCard';
+import { Device, devicesApi, getErrorMessage } from '../../lib/api';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
+
+interface DeviceReading {
+  device_id: number;
+  device_name: string;
+  unit: string;
+  value: number;
+  timestamp: string;
+  status: string;
+  thresholds: { warning?: number; critical?: number } | null;
+}
 
 export const DashboardPage: React.FC = () => {
-  const { user } = useAuthStore();
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [readings, setReadings] = useState<Map<number, DeviceReading>>(new Map());
 
-  if (!user) {
-    return null;
-  }
+  useEffect(() => {
+    loadDevices();
+    const websocket = connectWebSocket();
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'owner':
-        return 'gold';
-      case 'admin':
-        return 'blue';
-      case 'viewer':
-        return 'default';
-      default:
-        return 'default';
+    return () => {
+      if (websocket) {
+        websocket.close();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadDevices = async () => {
+    try {
+      const response = await devicesApi.list();
+      setDevices(response.devices);
+    } catch (error) {
+      console.error(getErrorMessage(error));
     }
   };
 
+  const connectWebSocket = (): WebSocket => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/live`;
+
+    const websocket = new WebSocket(wsUrl);
+
+    websocket.onopen = () => {
+      console.log('WebSocket connected');
+    };
+
+    websocket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'readings' && message.data) {
+        const newReadings = new Map<number, DeviceReading>();
+        message.data.forEach((reading: DeviceReading) => {
+          newReadings.set(reading.device_id, reading);
+        });
+        setReadings(newReadings);
+      }
+    };
+
+    websocket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    websocket.onclose = () => {
+      console.log('WebSocket disconnected, reconnecting in 5s...');
+      setTimeout(() => {
+        connectWebSocket();
+      }, 5000);
+    };
+
+    return websocket;
+  };
+
+  if (devices.length === 0) {
+    return (
+      <Empty
+        description="No devices configured. Create devices to start monitoring."
+        style={{ marginTop: 50 }}
+      />
+    );
+  }
+
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      <Card>
-        <Title level={2}>Welcome to DDMS</Title>
-        <Space direction="vertical" size="middle">
-          <div>
-            <Text type="secondary">Logged in as: </Text>
-            <Text strong>{user.username}</Text>
-          </div>
-          <div>
-            <Text type="secondary">Role: </Text>
-            <Tag color={getRoleColor(user.role)}>{user.role.toUpperCase()}</Tag>
-          </div>
-        </Space>
-      </Card>
-
-      <Card title="Getting Started">
-        <Space direction="vertical" size="small">
-          <Text>Device Data Monitoring System is now ready to use.</Text>
-
-          {user.role === 'owner' || user.role === 'admin' ? (
-            <>
-              <Text>As an {user.role}, you can:</Text>
-              <ul>
-                <li>Manage users (create, update, delete)</li>
-                <li>Configure monitoring devices (coming in Iteration 2)</li>
-                <li>View live data and historical trends (coming in Iterations 4-5)</li>
-              </ul>
-            </>
-          ) : (
-            <>
-              <Text>As a viewer, you can:</Text>
-              <ul>
-                <li>View dashboards and monitoring data (coming in Iteration 4)</li>
-                <li>Access historical charts and export data (coming in Iteration 5)</li>
-              </ul>
-            </>
-          )}
-
-          <Text type="secondary" style={{ marginTop: 16, display: 'block' }}>
-            Current Iteration: 1 - Authentication & Authorization ✓
-          </Text>
-        </Space>
-      </Card>
-    </Space>
+    <div>
+      <Title level={2} style={{ marginBottom: 24 }}>
+        Live Monitoring Dashboard
+      </Title>
+      <Row gutter={[16, 16]}>
+        {devices.map((device) => {
+          const reading = readings.get(device.id);
+          return (
+            <Col key={device.id} xs={24} sm={24} md={12} lg={12} xl={6}>
+              <DeviceCard device={device} reading={reading} />
+            </Col>
+          );
+        })}
+      </Row>
+    </div>
   );
 };
