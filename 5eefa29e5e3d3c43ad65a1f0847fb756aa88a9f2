@@ -1,0 +1,58 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    When deleting a user, error: Unexpected end of JSON input.
+  timestamp: '2025-10-13T16:01:30Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: assistant
+  content: |
+    Fixed the delete-user error and committed.
+
+    What I changed
+    - API client now handles 204/empty responses without JSON.parse.
+      - File: frontend/src/lib/api.ts
+    - Users page uses /users/ to avoid a redirect.
+      - File: frontend/src/app/pages/Users.tsx
+
+    Commit
+    - 10.6-fix(frontend): avoid JSON parse on 204 and reduce redirects
+    - Signature preserved
+
+    You can retry deleting a user now; the “Unexpected end of JSON input” should be gone. If anything else pops up on the Users page, tell me and I’ll take a look.
+  timestamp: '2025-10-13T16:24:36Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: user
+  content: |
+    Still got: Failed to execute 'json' on 'Response': Unexpected end of JSON input
+  timestamp: '2025-10-13T16:25:57Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: user
+  content: |
+    Still error: Unexpected end of JSON input
+  timestamp: '2025-10-13T16:30:51Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
+- role: assistant
+  content: |
+    Thanks for the heads up. I found the root cause and made changes so delete no longer triggers JSON parsing on an empty body.
+
+    What I changed
+    - Backend delete returns JSON instead of 204
+      - `DELETE /api/users/{id}` now responds `200` with `{"ok": true}` to avoid any client calling `response.json()` on an empty body.
+      - File: backend/ddms/api/routes_users.py:1
+    - Frontend API client already handles 204/empty bodies gracefully
+      - File: frontend/src/lib/api.ts:1
+    - Users list fetch uses trailing slash to avoid redirects
+      - File: frontend/src/app/pages/Users.tsx:1
+
+    What to do now
+    - Hard refresh the browser (or open an incognito window).
+    - On Users page, delete a non-owner user again. The “Unexpected end of JSON input” error should be gone.
+
+    If you still see it, tell me the exact toast text and check the browser Network tab for the delete request:
+    - Status code and response headers/body for `DELETE /api/users/{id}`
+    - Any 307/redirects or CORS warnings
+
+    Once you confirm it’s resolved, I can commit this fix with a clear, single-sentence title describing the user-visible impact.
+  timestamp: '2025-10-13T23:26:34Z'
+  log_uri: 'codex-cli:2025/10/13/rollout-2025-10-13T19-54-35-0199dd6c-23d5-7292-ada4-aec39f729dae.jsonl'
