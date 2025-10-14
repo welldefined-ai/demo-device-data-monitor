@@ -386,10 +386,10 @@ No separate group endpoints needed - tabs filter existing views.
 
 **Requirements**:
 
-- [x] DDMS-I18N-010: English and Chinese (infrastructure ready, sample translations)
-- [x] DDMS-I18N-020: Switch language (i18next configured)
-- [x] DDMS-I18N-030: Remember preference (backend field exists)
-- [ ] DDMS-I18N-040: Full translation coverage (ongoing - key strings translated)
+- [x] DDMS-I18N-010: English and Chinese
+- [x] DDMS-I18N-020: Switch language
+- [x] DDMS-I18N-030: Remember preference
+- [x] DDMS-I18N-040: Full translation coverage (100+ strings across all pages)
 - [x] DDMS-UI-010: Clean, modern design (Ant Design)
 - [x] DDMS-UI-020: Professional appearance (Ant Design)
 - [x] DDMS-UI-030: Animated charts (ECharts animations)
