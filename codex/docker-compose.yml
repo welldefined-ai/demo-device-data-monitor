@@ -1,16 +1,43 @@
 services:
+  db:
+    image: timescale/timescaledb:latest-pg16
+    container_name: ddms-db
+    environment:
+      - POSTGRES_DB=ddms
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./infra/db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ddms"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: .
       dockerfile: infra/docker/backend/Dockerfile
     container_name: ddms-backend
     environment:
-      - DDMS_ENV=production
-      # - DDMS_DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/ddms
+      - DDMS_ENV=development
+      - DDMS_DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/ddms
+    command: uvicorn ddms.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
     ports:
-      - "8800:8000"
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test:
+        - CMD-SHELL
+        - >
+          python -c "import json,urllib.request;data=json.loads(urllib.request.urlopen('http://127.0.0.1:8000/api/health',timeout=5).read());exit(0 if data.get('status')=='ok' else 1)"
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,18 +51,6 @@ services:
       - backend
     ports:
       - "8080:80"
-
-  # db:
-  #   image: timescale/timescaledb:latest-pg16
-  #   container_name: ddms-db
-  #   environment:
-  #     - POSTGRES_PASSWORD=postgres
-  #     - POSTGRES_DB=ddms
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - db-data:/var/lib/postgresql/data
-  #     - ./infra/db/init:/docker-entrypoint-initdb.d
 
 volumes:
   db-data:

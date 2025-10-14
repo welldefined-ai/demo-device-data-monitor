@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -12,6 +14,14 @@ class Settings(BaseSettings):
     )
     secret_key: str = Field("change-me", description="JWT signing secret")
     jwt_algorithm: str = Field("HS256", description="JWT algorithm")
+    log_level: str = Field("INFO", description="Application log level")
+    owner_default_username: str = Field("owner", description="Default owner username for bootstrap")
+    owner_default_password: str = Field("owner", description="Default owner password for bootstrap")
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="DDMS_", case_sensitive=False)
 
+
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    """Return a cached Settings instance."""
+    return Settings()

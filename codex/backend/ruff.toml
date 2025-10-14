@@ -9,3 +9,10 @@ ignore = [
   "S101" # allow assert in tests
 ]
 
+# Exclude generated/migration code from lint noise
+exclude = [
+  "alembic/*",
+]
+
+[lint.isort]
+known-first-party = ["ddms"]

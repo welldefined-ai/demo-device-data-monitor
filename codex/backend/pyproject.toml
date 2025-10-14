@@ -18,7 +18,23 @@ dependencies = [
     "python-jose[cryptography]>=3.3",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.4",
+    "httpx>=0.28",
+    "ruff>=0.6",
+    "mypy>=1.10",
+    "types-python-jose>=3.3.4.20240106",
+]
+
 [tool.pytest.ini_options]
-testpaths = ["backend/tests"]
+testpaths = ["tests"]
 addopts = "-q"
 
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["ddms*"]
+exclude = ["alembic*", "tests*"]

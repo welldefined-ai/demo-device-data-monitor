@@ -1,11 +1,22 @@
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Depends
+
+from ddms import __version__
+from ddms.core.config import Settings, get_settings
+
+router = APIRouter(tags=["system"])
 
 
-router = APIRouter()
+@router.get("/health", summary="API health check")
+def api_health(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> dict[str, str]:
+    """Return API health information."""
+    return {"status": "ok", "env": settings.env}
 
 
-@router.get("/health", tags=["system"])
-def api_health() -> dict[str, str]:
-    """Simple health endpoint under /api."""
-    return {"status": "ok"}
-
+@router.get("/version", summary="API version")
+def api_version() -> dict[str, str]:
+    """Return the current API version."""
+    return {"version": __version__}
