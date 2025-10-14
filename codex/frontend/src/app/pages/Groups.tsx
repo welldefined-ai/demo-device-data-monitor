@@ -10,6 +10,7 @@ export function GroupsPage(): JSX.Element {
   const [open, setOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [currentGroup, setCurrentGroup] = useState<Group | null>(null);
+  const [assigned, setAssigned] = useState<Device[]>([]);
   const [form] = Form.useForm<{ name: string; description?: string }>();
   const [assignForm] = Form.useForm<{ device_id: number }>();
   const [msg, ctx] = message.useMessage();
@@ -81,9 +82,18 @@ export function GroupsPage(): JSX.Element {
               onClick={() => {
                 setCurrentGroup(r);
                 setAssignOpen(true);
+                // load assigned devices for this group
+                void (async () => {
+                  try {
+                    const ds = await api.get<Device[]>(`/groups/${r.id}/devices`);
+                    setAssigned(ds);
+                  } catch (e: any) {
+                    msg.error(e?.message || 'Failed to load devices');
+                  }
+                })();
               }}
             >
-              Assign Device
+              Manage Devices
             </Button>
             <Button danger size="small" onClick={() => onDelete(r.id)}>
               Delete
@@ -110,7 +120,7 @@ export function GroupsPage(): JSX.Element {
         </Form>
       </Modal>
 
-      <Modal title={`Assign Device to ${currentGroup?.name ?? ''}`} open={assignOpen} onCancel={() => setAssignOpen(false)} onOk={onAssign} okText="Assign">
+      <Modal title={`Manage Devices in ${currentGroup?.name ?? ''}`} open={assignOpen} onCancel={() => setAssignOpen(false)} onOk={onAssign} okText="Assign">
         <Form form={assignForm} layout="vertical">
           <Form.Item name="device_id" label="Device" rules={[{ required: true }]}>
             <Select
@@ -119,8 +129,38 @@ export function GroupsPage(): JSX.Element {
             />
           </Form.Item>
         </Form>
+        <div style={{ marginTop: 16 }}>
+          <strong>Assigned Devices</strong>
+          <div style={{ marginTop: 8 }}>
+            {assigned.length === 0 ? (
+              <div style={{ color: '#888' }}>No devices assigned.</div>
+            ) : (
+              assigned.map((d) => (
+                <div key={d.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
+                  <span>
+                    {d.name} (#{d.id})
+                  </span>
+                  <Button
+                    size="small"
+                    onClick={async () => {
+                      if (!currentGroup) return;
+                      try {
+                        await api.delete(`/groups/${currentGroup.id}/devices/${d.id}`);
+                        setAssigned((prev) => prev.filter((x) => x.id !== d.id));
+                        msg.success('Removed');
+                      } catch (e: any) {
+                        msg.error(e?.message || 'Remove failed');
+                      }
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </Modal>
     </Card>
   );
 }
-

@@ -12,8 +12,12 @@ from ddms.db.repositories.groups import (
     list_groups,
     remove_device,
     rename_group,
+    list_group_devices,
 )
 from ddms.schemas.groups import GroupCreate, GroupOut, GroupUpdate
+from ddms.schemas.devices import DeviceOut
+import json
+from ddms.schemas.devices import DeviceOut
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
@@ -90,3 +94,31 @@ def groups_unassign(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
     remove_device(session, g, d)
     return {"ok": True}
+
+
+@router.get("/{group_id}/devices", response_model=list[DeviceOut])
+def groups_devices(session: SessionDep, group_id: int = Path(..., ge=1)) -> list[DeviceOut]:
+    g = session.get(Group, group_id)
+    if not g:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
+    devices = list_group_devices(session, g)
+    out: list[DeviceOut] = []
+    for d in devices:
+        thresholds = json.loads(d.thresholds or "{}")
+        modbus = json.loads(d.modbus_config or "{}")
+        out.append(
+            DeviceOut(
+                id=d.id,
+                name=d.name,
+                description=d.description,
+                unit=d.unit,
+                sampling_interval=d.sampling_interval,
+                thresholds=thresholds,
+                modbus_config=modbus,
+                status=d.status,
+                last_reading_at=d.last_reading_at,
+                created_at=d.created_at,
+                updated_at=d.updated_at,
+            )
+        )
+    return out

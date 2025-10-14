@@ -53,3 +53,13 @@ def remove_device(session: Session, group: Group, device: Device) -> None:
         )
     )
     session.commit()
+
+
+def list_group_devices(session: Session, group: Group) -> list[Device]:
+    stmt = (
+        select(Device)
+        .join(GroupDevice, Device.id == GroupDevice.device_id)
+        .where(GroupDevice.group_id == group.id)
+        .order_by(Device.id.asc())
+    )
+    return list(session.scalars(stmt).all())
