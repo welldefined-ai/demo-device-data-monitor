@@ -21,19 +21,33 @@ context = ModbusServerContext(slaves=store, single=True)
 def update_values(context):
     """Update register values to simulate changing sensor data."""
     while True:
-        # Generate random temperature value (20-30°C) for register 40001 (address 0)
-        # Convert to 16-bit integer scaled by 10 (e.g., 25.3°C -> 253)
+        # Simulate 4 different sensors
+        # Register 0 (40001): Temperature 20-30°C
         temp_value = int((20 + random.random() * 10) * 10)
-
-        # Write to holding register 0 (Modbus address 40001)
         context[0].setValues(3, 0, [temp_value])
+
+        # Register 1 (40002): Pressure 0-100 bar
+        pressure_value = int(random.random() * 100 * 10)
+        context[0].setValues(3, 1, [pressure_value])
+
+        # Register 2 (40003): RPM 1000-3000
+        rpm_value = int(1000 + random.random() * 2000)
+        context[0].setValues(3, 2, [rpm_value])
+
+        # Register 3 (40004): Humidity 30-70%
+        humidity_value = int((30 + random.random() * 40) * 10)
+        context[0].setValues(3, 3, [humidity_value])
 
         time.sleep(5)  # Update every 5 seconds
 
 
 if __name__ == "__main__":
     print("Starting Modbus TCP simulator on port 5020...")
-    print("Register 40001 (address 0): Simulated temperature (20-30°C)")
+    print("Available registers:")
+    print("  40001 (address 0): Temperature 20-30°C")
+    print("  40002 (address 1): Pressure 0-100 bar")
+    print("  40003 (address 2): RPM 1000-3000")
+    print("  40004 (address 3): Humidity 30-70%")
 
     # Start value updater in background
     import threading
