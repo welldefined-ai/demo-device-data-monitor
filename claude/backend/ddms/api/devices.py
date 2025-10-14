@@ -385,23 +385,27 @@ async def get_historical_readings(
             detail="Device not found",
         )
 
-    # Parse time range
+    # Parse time range (make all datetimes timezone-naive for database compatibility)
     try:
         if end:
-            end_time = datetime.fromisoformat(end.replace("Z", "+00:00"))
+            end_time = datetime.fromisoformat(end.replace("Z", ""))
+            if end_time.tzinfo:
+                end_time = end_time.replace(tzinfo=None)
         else:
             end_time = datetime.now()
 
         if start:
-            start_time = datetime.fromisoformat(start.replace("Z", "+00:00"))
+            start_time = datetime.fromisoformat(start.replace("Z", ""))
+            if start_time.tzinfo:
+                start_time = start_time.replace(tzinfo=None)
         else:
             from datetime import timedelta
 
             start_time = end_time - timedelta(hours=24)
-    except ValueError as e:
+    except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid time format: {e}",
+            detail="Invalid time format. Use ISO8601 format (e.g., 2025-10-14T10:30:00)",
         ) from None
 
     # Query readings within time range

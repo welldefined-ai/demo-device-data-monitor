@@ -61,15 +61,29 @@ export const HistoryPage: React.FC = () => {
       const start = dateRange[0].toISOString();
       const end = dateRange[1].toISOString();
 
-      const response = await fetch(
-        `/api/devices/${selectedDeviceId}/readings/history?start=${start}&end=${end}`
-      ).then(res => res.json());
+      const res = await fetch(
+        `/api/devices/${selectedDeviceId}/readings/history?start=${start}&end=${end}`,
+        { credentials: 'include' }
+      );
+
+      if (!res.ok) {
+        if (res.status === 500) {
+          throw new Error('Server error occurred. Please try again.');
+        }
+        const errorData = await res.json().catch(() => ({ detail: 'Unknown error' }));
+        throw new Error(errorData.detail || `Error ${res.status}`);
+      }
+
+      const response = await res.json();
 
       if (response.readings) {
         setReadings(response.readings);
+      } else {
+        setReadings([]);
       }
     } catch (error) {
       message.error(getErrorMessage(error));
+      setReadings([]);
     } finally {
       setLoading(false);
     }
