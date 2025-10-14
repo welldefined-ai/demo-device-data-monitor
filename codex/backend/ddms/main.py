@@ -12,6 +12,8 @@ from ddms.api.routes_users import router as users_router
 from ddms.core.config import get_settings
 from ddms.core.logging import configure_logging
 from ddms.db.session import SessionLocal
+from ddms.realtime.manager import manager as ws_manager
+from ddms.realtime.routes_ws import router as ws_router
 from ddms.scheduler.manager import IngestionScheduler
 from ddms.services.bootstrap import ensure_owner_account
 from ddms.services.dev_seed import ensure_demo_device
@@ -35,6 +37,7 @@ def create_app() -> FastAPI:
     app.include_router(users_router, prefix="/api")
     app.include_router(devices_router, prefix="/api")
     app.include_router(groups_router, prefix="/api")
+    app.include_router(ws_router)
 
     # Initialize scheduler
     app.state.scheduler = IngestionScheduler(SessionLocal)
@@ -52,6 +55,8 @@ def create_app() -> FastAPI:
             app.state.scheduler = IngestionScheduler(SessionLocal)
             app.state.scheduler.start()
             app.state.scheduler.refresh_all_jobs()
+            # Start WS broadcast loop
+            ws_manager.start()
         # Dev seed (optional)
         with suppress(Exception), SessionLocal() as session:
             ensure_demo_device(session, settings, app.state.scheduler)

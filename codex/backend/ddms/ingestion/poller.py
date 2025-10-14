@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from ddms.db.models import Device, DeviceStatus
 from ddms.db.repositories.devices import update_device
 from ddms.db.repositories.readings import create_reading
+from ddms.realtime.manager import manager as ws_manager
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +123,16 @@ def poll_device(session_factory: sessionmaker[Session], device_id: int) -> None:
             d.last_reading_at = ts
             session.add(d)
             session.commit()
+            # Publish to WebSocket subscribers (best-effort)
+            ws_manager.publish(
+                device_id=d.id,
+                payload={
+                    "type": "reading",
+                    "timestamp": ts.isoformat(),
+                    "value": float(value),
+                    "status": DeviceStatus.ONLINE.value,
+                },
+            )
         except Exception as err:  # pragma: no cover - network dependent
             logger.debug("Polling device %s failed: %s", d.id, err)
             # Conservative: mark offline on connection issues, else error

@@ -7,6 +7,7 @@ import { UsersPage } from './pages/Users';
 import { ProfilePage } from './pages/Profile';
 import { DevicesPage } from './pages/Devices';
 import { GroupsPage } from './pages/Groups';
+import { DashboardPage } from './pages/Dashboard';
 
 const { Header, Sider, Content } = Layout;
 
@@ -42,6 +43,7 @@ function AppShell() {
 
   const navItems = [
     { key: 'home', label: <Link to="/">Home</Link> },
+    ...(user ? [{ key: 'dashboard', label: <Link to="/dashboard">Dashboard</Link> }] : []),
     ...(user && (user.role === 'owner' || user.role === 'admin')
       ? [{ key: 'users', label: <Link to="/users">Users</Link> }]
       : []),
@@ -79,6 +81,14 @@ function AppShell() {
         <Content style={{ padding: 24 }}>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route
+              path="/dashboard"
+              element={
+                <Protected>
+                  <DashboardPage />
+                </Protected>
+              }
+            />
             <Route
               path="/users"
               element={

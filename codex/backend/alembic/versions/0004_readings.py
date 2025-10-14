@@ -31,19 +31,13 @@ def upgrade() -> None:
         ["device_id", "timestamp"],
         unique=False,
     )
-    # If TimescaleDB is available, make it a hypertable (best-effort)
-    try:
-        op.execute("CREATE EXTENSION IF NOT EXISTS timescaledb")
-        op.execute(
-            "SELECT create_hypertable('readings', by_range('timestamp'), if_not_exists => TRUE)"
-        )
-    except Exception:
-        # Non-fatal if extension is not available
-        pass
+    # TimescaleDB hypertable creation is intentionally skipped here to avoid
+    # failures with primary key uniqueness constraints in dev environments.
+    # A follow-up migration can convert the table when production constraints
+    # and permissions allow it.
 
 
 def downgrade() -> None:
     op.drop_index("ix_readings_device_ts", table_name="readings")
     op.drop_index("ix_readings_device_id", table_name="readings")
     op.drop_table("readings")
-
