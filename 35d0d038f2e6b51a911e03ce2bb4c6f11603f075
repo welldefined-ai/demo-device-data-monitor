@@ -1,0 +1,140 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    Start Iteration 3.
+  timestamp: '2025-10-14T04:34:25Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
+- role: assistant
+  content: |
+    **Iteration 3 Plan: Data Ingestion & Scheduling**
+
+    This iteration implements real-time Modbus polling and time-series data storage. It's complex, so I'll work methodically and verify all CI checks locally before committing.
+
+    **Key Components:**
+    1. TimescaleDB hypertable for efficient time-series storage
+    2. Modbus client (pymodbus) with TCP/RTU support
+    3. APScheduler for background polling jobs
+    4. Device poller with error handling and status updates
+    5. Dynamic job management (device lifecycle hooks)
+
+    Let me start:
+  timestamp: '2025-10-14T04:36:02Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
+- role: assistant
+  content: |
+    ## ✅ Iteration 3 Complete!
+
+    **Commits Created:**
+    1. `12` - Modbus polling and time-series data ingestion backend
+    2. `12.1` - Test environment configuration
+    3. `12.2` - Roadmap requirements update
+    4. `12.3` - Modbus TCP simulator
+
+    ### Implementation Summary
+
+    **Backend:**
+    - TimescaleDB hypertable for readings with composite PK (device_id, timestamp)
+    - Modbus client wrapper (TCP and RTU, 5 data types)
+    - Device poller service with error handling
+    - APScheduler for background polling jobs
+    - Dynamic job management (device lifecycle hooks)
+    - GET /api/devices/{id}/readings/current endpoint
+    - Real Modbus connection testing
+
+    **Testing:**
+    - All 60 tests pass (with DDMS_ENV=test)
+    - Scheduler disabled in test environment
+    - Full CI pipeline verified locally
+
+    ---
+
+    ## Manual Verification Instructions
+
+    Access **http://localhost:8081** and login with `admin`/`admin`:
+
+    ### 1. Start Modbus Simulator
+
+    ```bash
+    docker compose up -d modbus-simulator
+    docker logs claude-modbus-sim
+    # Should see: "Starting Modbus TCP simulator on port 5020..."
+    ```
+
+    ### 2. Create Device Pointing to Simulator
+
+    - Navigate to **Devices** → **Create Device**
+    - Fill form:
+      - **Name**: "Simulator Temperature Sensor"
+      - **Unit**: "°C"
+      - **Sampling Interval**: 10 (seconds)
+      - **Warning Threshold**: 28
+      - **Critical Threshold**: 29
+      - **Modbus Type**: TCP
+      - **Host**: `modbus-simulator`
+      - **Port**: 5020
+      - **Register**: 40001
+      - **Data Type**: INT16
+    - Click **Create**
+    - ✅ Verify device created with OFFLINE status
+
+    ### 3. Wait for Sampling Interval
+
+    - Wait 10-15 seconds
+    - Refresh the Devices page
+    - ✅ Verify device status changes to **ONLINE**
+    - ✅ Verify "Last Reading" timestamp is populated
+
+    ### 4. View Readings in Database
+
+    ```bash
+    docker exec claude-db psql -U ddms -d ddms -c "SELECT device_id, timestamp, value FROM readings ORDER BY timestamp DESC LIMIT 10;"
+    ```
+    - ✅ Verify readings appear in database
+
+    ### 5. Check Device Detail
+
+    - Click **View** on the device
+    - ✅ Verify status shows **ONLINE** (green tag)
+    - ✅ Verify "Last Reading" shows recent timestamp
+    - Click **Test Connection**
+    - ✅ Verify success message with current reading value
+
+    ### 6. Stop Simulator and Verify Offline
+
+    ```bash
+    docker compose stop modbus-simulator
+    ```
+    - Wait 15-20 seconds
+    - Refresh device detail
+    - ✅ Verify status changes to **ERROR** (red tag)
+
+    ### 7. Restart Simulator and Verify Recovery
+
+    ```bash
+    docker compose start modbus-simulator
+    ```
+    - Wait 15-20 seconds
+    - Refresh device detail
+    - ✅ Verify status returns to **ONLINE**
+
+    ### 8. Verify Scheduler Survives Backend Restart
+
+    ```bash
+    # Note current reading count
+    docker exec claude-db psql -U ddms -d ddms -c "SELECT COUNT(*) FROM readings WHERE device_id=1;"
+
+    # Restart backend
+    docker compose restart backend
+
+    # Wait 30 seconds
+    sleep 30
+
+    # Check reading count increased
+    docker exec claude-db psql -U ddms -d ddms -c "SELECT COUNT(*) FROM readings WHERE device_id=1;"
+    ```
+    - ✅ Verify new readings added after backend restart
+
+    **All Iteration 3 requirements fulfilled!** ✅
+  timestamp: '2025-10-14T05:12:49Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
