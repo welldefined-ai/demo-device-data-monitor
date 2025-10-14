@@ -273,9 +273,14 @@ This roadmap sequences implementation work into clear iterations, each with deli
 
 **Frontend**:
 
-- History page with device selector
-- Custom time range picker
-- Historical line chart with threshold lines overlay, threshold violation highlighting, zoom and pan controls
+- History page with multi-device selector (supports multiple devices)
+- Custom date range picker (date-only, 2-click selection)
+- Historical line chart with:
+  - Multi-device overlay support
+  - Dual Y-axes for different units (max 2 for readability)
+  - Threshold-colored curve segments (green/yellow/red)
+  - Zoom and pan controls
+  - Legend to toggle devices
 - Export CSV button
 - Loading states for large queries
 
@@ -284,12 +289,15 @@ This roadmap sequences implementation work into clear iterations, each with deli
 **Manual Verification**:
 
 - Navigate to History page
-- Select device from dropdown
-- Choose custom time range (e.g., last 24 hours)
-- Verify chart displays correct data with threshold lines
+- Select single device from dropdown, verify chart displays
+- Select multiple devices (e.g., Temperature + Pressure), verify dual Y-axes
+- Choose custom date range (2 clicks on calendar)
+- Verify chart displays correct data with threshold-colored curve segments
+- Verify curve segments change color at threshold crossings (green/yellow/red)
+- Click legend items to toggle devices on/off
+- Use zoom and pan controls
 - Click "Export CSV" and verify download
 - Open CSV file and verify format matches data shown in chart
-- Check that threshold violations are highlighted on chart
 - Verify loading indicator appears during data fetch
 
 **Requirements**:
