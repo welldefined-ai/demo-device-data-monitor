@@ -1,0 +1,50 @@
+{
+  "nav": {
+    "dashboard": "仪表板",
+    "devices": "设备",
+    "groups": "分组",
+    "history": "历史数据",
+    "users": "用户",
+    "profile": "个人设置",
+    "logout": "退出登录"
+  },
+  "dashboard": {
+    "title": "实时监控仪表板",
+    "allDevices": "所有设备",
+    "noDevices": "未配置设备。请创建设备以开始监控。",
+    "updated": "更新于"
+  },
+  "devices": {
+    "title": "设备",
+    "create": "创建设备",
+    "view": "查看",
+    "delete": "删除",
+    "status": {
+      "online": "在线",
+      "offline": "离线",
+      "error": "错误"
+    }
+  },
+  "groups": {
+    "title": "设备分组",
+    "create": "创建分组",
+    "manage": "管理设备",
+    "assign": "分配",
+    "delete": "删除"
+  },
+  "history": {
+    "title": "历史数据",
+    "selectDevices": "选择设备",
+    "export": "导出 CSV",
+    "loading": "加载历史数据中...",
+    "noData": "所选时间范围内无可用数据"
+  },
+  "common": {
+    "cancel": "取消",
+    "save": "保存",
+    "create": "创建",
+    "update": "更新",
+    "back": "返回",
+    "loading": "加载中..."
+  }
+}
