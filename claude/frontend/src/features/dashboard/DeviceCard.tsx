@@ -7,6 +7,7 @@ import { Card, Typography, Tag, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import ReactECharts from 'echarts-for-react';
 import { Device, getErrorMessage } from '../../lib/api';
+import { formatTime } from '../../lib/time';
 
 const { Text, Title } = Typography;
 
@@ -29,22 +30,9 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
   const { t } = useTranslation();
   const [historicalData, setHistoricalData] = useState<Array<{ timestamp: string; value: number }>>([]);
 
-  // Determine decimal precision from thresholds
-  const getDecimalPlaces = (num: number): number => {
-    const str = num.toString();
-    const decimalIndex = str.indexOf('.');
-    return decimalIndex === -1 ? 0 : str.length - decimalIndex - 1;
-  };
-
-  const thresholds = device.thresholds;
-  let precision = 1; // Default
-  if (thresholds?.warning !== undefined && thresholds?.critical !== undefined) {
-    precision = Math.max(getDecimalPlaces(thresholds.warning), getDecimalPlaces(thresholds.critical));
-  } else if (thresholds?.warning !== undefined) {
-    precision = getDecimalPlaces(thresholds.warning);
-  } else if (thresholds?.critical !== undefined) {
-    precision = getDecimalPlaces(thresholds.critical);
-  }
+  // Use 1 decimal place for consistent display with threshold format
+  // (JavaScript drops trailing zeros, e.g., 1.0 → 1, but we want to show 1.0)
+  const precision = 1;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -55,7 +43,7 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
 
         if (readings.readings) {
           const data = readings.readings.reverse().map((r: { timestamp: string; value: number }) => ({
-            timestamp: new Date(r.timestamp).toLocaleTimeString(),
+            timestamp: formatTime(r.timestamp),
             value: r.value,
           }));
           setHistoricalData(data);
@@ -145,6 +133,7 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
   };
 
   const getTrendOption = () => {
+    const thresholds = device.thresholds;
     const maxValue = Math.max(...historicalData.map(d => d.value), thresholds?.critical || 100);
 
     // Create threshold markLines and background visualMap
@@ -256,7 +245,7 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
 
         <Text type="secondary" style={{ fontSize: 12, textAlign: 'center', display: 'block' }}>
           {reading?.timestamp
-            ? `${t('dashboard.updated')}: ${new Date(reading.timestamp).toLocaleTimeString()}`
+            ? `${t('dashboard.updated')}: ${formatTime(reading.timestamp)}`
             : t('devices.noReadingsYet')}
         </Text>
 
