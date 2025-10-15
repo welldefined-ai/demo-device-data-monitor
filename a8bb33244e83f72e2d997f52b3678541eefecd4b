@@ -1,0 +1,60 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    The browser title is "Distributed Device ..." It is wrong. Can it be translated in time? If not, just use "DDMS" alone without the text. And how to change the language of the logging page?
+  timestamp: '2025-10-14T23:28:18Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
+- role: assistant
+  content: |
+    ✅ **All improvements deployed!**
+
+    **Test at http://localhost:8081:**
+
+    1. **Browser title**: Now just "DDMS" (check browser tab) ✓
+    2. **Login page language**:
+       - Select "中文" from dropdown (top right of card)
+       - Subtitle → "设备数据监控系统"
+       - Username → "用户名"
+       - Password → "密码"
+       - Button → "登录"
+       - Default credentials → "默认账号：admin / admin"
+    3. **Better role translations**: owner → 超级管理员, viewer → 普通用户
+
+    **Iteration 7 final commits:**
+    1. `16` - i18n infrastructure
+    2. `16.1` - Comprehensive UI component translations
+    3. `16.2` - Roadmap marked complete
+    4. `16.3` - Login page & improved role translations
+
+    **ALL system text now translates!** Ready for PR (already created: #16).
+  timestamp: '2025-10-14T23:36:56Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
+- role: user
+  content: |
+    One amendment: the language switch on the login is too wide and ugly. Can you put a typical language logo/toggle or so in a better location?
+  timestamp: '2025-10-14T23:39:27Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
+- role: assistant
+  content: |
+    ✅ **Login page language toggle improved!**
+
+    **What changed:**
+    - **Replaced** wide dropdown selector
+    - **New design**: Compact button at top-right corner of card
+      - Globe icon (🌐)
+      - Shows opposite language: "中文" when English, "EN" when Chinese
+      - One-click toggle
+      - Minimal, elegant design
+
+    **Test at http://localhost:8081/login:**
+    - See globe icon button at top-right: "🌐 中文"
+    - Click it → Page switches to Chinese
+    - Button now shows: "🌐 EN"
+    - Click again → Back to English
+
+    **Much cleaner!** No wide dropdown, just a compact toggle button.
+
+    **Iteration 7 complete** with elegant language switcher on both login page and main app!
+  timestamp: '2025-10-14T23:43:45Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
