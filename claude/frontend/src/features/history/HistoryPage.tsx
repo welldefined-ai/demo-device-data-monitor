@@ -130,8 +130,9 @@ export const HistoryPage: React.FC = () => {
     const start = dateRange[0].toISOString();
     const end = dateRange[1].toISOString();
 
-    // Export first selected device
-    const url = `/api/devices/${selectedDeviceIds[0]}/readings/export?start=${start}&end=${end}`;
+    // Export all selected devices
+    const deviceIdsParam = selectedDeviceIds.join(',');
+    const url = `/api/devices/readings/export-multi?device_ids=${deviceIdsParam}&start=${start}&end=${end}`;
     window.open(url, '_blank');
     message.success(t('history.exportStarted'));
   };

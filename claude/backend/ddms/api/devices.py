@@ -484,3 +484,75 @@ async def export_readings_csv(
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+
+@router.get("/readings/export-multi")
+async def export_multi_device_readings_csv(
+    device_ids: str,
+    session: DbSession,
+    current_user: CurrentUser,
+    start: str | None = None,
+    end: str | None = None,
+) -> StreamingResponse:
+    """
+    Export historical readings for multiple devices as combined CSV.
+
+    Args:
+        device_ids: Comma-separated device IDs (e.g., "1,2,3")
+        session: Database session
+        current_user: Current authenticated user
+        start: Start time (ISO8601 format)
+        end: End time (ISO8601 format)
+
+    Returns:
+        Combined CSV file with all devices
+    """
+    # Parse device IDs
+    try:
+        ids = [int(id.strip()) for id in device_ids.split(",")]
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid device_ids format",
+        ) from None
+
+    # Create CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Write header
+    writer.writerow(["Device", "Timestamp", "Value", "Unit"])
+
+    # Fetch and write data for each device
+    for device_id in ids:
+        try:
+            readings_response = await get_historical_readings(
+                device_id, session, current_user, start, end
+            )
+
+            # Get device info
+            result = await session.execute(select(Device).where(Device.id == device_id))
+            device = result.scalar_one_or_none()
+
+            if device:
+                for reading in readings_response.readings:
+                    writer.writerow(
+                        [
+                            device.name,
+                            reading.timestamp.isoformat(),
+                            reading.value,
+                            device.unit,
+                        ]
+                    )
+        except Exception:
+            continue
+
+    # Prepare response
+    output.seek(0)
+    filename = f"devices_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
