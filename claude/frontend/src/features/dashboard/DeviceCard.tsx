@@ -119,10 +119,7 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
             fontSize: 10,
           },
           detail: {
-            valueAnimation: true,
-            formatter: `{value} ${device.unit}`,
-            fontSize: 16,
-            offsetCenter: [0, '70%'],
+            show: false, // Hide center number
           },
           data: [{ value }],
         },
@@ -227,7 +224,14 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
         </div>
 
         <div style={{ textAlign: 'center', margin: '8px 0' }}>
-          <Title level={2} style={{ margin: 0, color: getValueColor() }}>
+          <Title
+            level={2}
+            style={{
+              margin: 0,
+              color: getValueColor(),
+              transition: 'all 0.5s ease',
+            }}
+          >
             {reading?.value ? reading.value.toFixed(1) : '-'}
           </Title>
           <Text type="secondary">{device.unit}</Text>
@@ -239,9 +243,9 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
             : t('devices.noReadingsYet')}
         </Text>
 
-        <ReactECharts option={getGaugeOption()} style={{ height: '180px' }} />
+        <ReactECharts option={getGaugeOption()} style={{ height: '180px', marginBottom: -8 }} />
 
-        <div>
+        <div style={{ marginTop: -8 }}>
           <Text type="secondary" style={{ fontSize: 12 }}>{t('dashboard.recentTrend')}</Text>
           <ReactECharts option={getTrendOption()} style={{ height: '150px' }} />
         </div>
