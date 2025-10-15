@@ -1,0 +1,24 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    Solve this: the tool tip over chart shows "Value ..." and a long number. First, "value" should be translated to 读数; second, the value should reserve the same number of decimals as the thresholds (if they have different decimals, pick the max). Again, only commit related changes, not config files.
+  timestamp: '2025-10-15T00:56:17Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
+- role: assistant
+  content: |
+    ✓ **Tooltip fix deployed and committed**
+
+    **Changes committed:**
+    - Tooltip: "Value" → translates to "读数" in Chinese
+    - Value formatting: Auto-detects precision from thresholds
+    - Main value display: Uses same precision
+    - Translation files: Added "reading" key
+
+    **Config files NOT committed** (as requested):
+    - `backend/scripts/seed_demo_devices.py` (8 devices, Chinese names)
+    - `scripts/modbus_simulator.py` (steam-specific value ranges)
+
+    **Test:** Hover over trend chart → tooltip shows "读数: 0.05 ug/L" with correct decimal places based on thresholds.
+  timestamp: '2025-10-15T01:03:29Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
