@@ -1,0 +1,20 @@
+schema: tigs.chat/v1
+messages:
+- role: user
+  content: |
+    Ok, then fix another bug: Export to CSV shows 500 Server Error. Note all data of the shown history chart should be exported, not just one device. Only commit changes for this fix.
+  timestamp: '2025-10-15T00:45:28Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
+- role: assistant
+  content: |
+    ✓ **CSV export fix committed and deployed**
+
+    **Changes:**
+    - Backend: New `/api/devices/readings/export-multi` endpoint
+    - Frontend: Exports ALL selected devices (not just first one)
+    - CSV includes Device column to identify each reading
+    - Format: Device, Timestamp, Value, Unit
+
+    **Test:** Go to History page, select multiple devices, click Export CSV → downloads combined file with all devices.
+  timestamp: '2025-10-15T00:53:28Z'
+  log_uri: 'claude-code:7ccfd91c-d129-44c2-a8fb-1876d34247d2.jsonl'
