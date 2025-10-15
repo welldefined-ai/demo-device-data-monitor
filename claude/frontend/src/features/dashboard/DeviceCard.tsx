@@ -29,6 +29,23 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
   const { t } = useTranslation();
   const [historicalData, setHistoricalData] = useState<Array<{ timestamp: string; value: number }>>([]);
 
+  // Determine decimal precision from thresholds
+  const getDecimalPlaces = (num: number): number => {
+    const str = num.toString();
+    const decimalIndex = str.indexOf('.');
+    return decimalIndex === -1 ? 0 : str.length - decimalIndex - 1;
+  };
+
+  const thresholds = device.thresholds;
+  let precision = 1; // Default
+  if (thresholds?.warning !== undefined && thresholds?.critical !== undefined) {
+    precision = Math.max(getDecimalPlaces(thresholds.warning), getDecimalPlaces(thresholds.critical));
+  } else if (thresholds?.warning !== undefined) {
+    precision = getDecimalPlaces(thresholds.warning);
+  } else if (thresholds?.critical !== undefined) {
+    precision = getDecimalPlaces(thresholds.critical);
+  }
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -128,7 +145,6 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
   };
 
   const getTrendOption = () => {
-    const thresholds = device.thresholds;
     const maxValue = Math.max(...historicalData.map(d => d.value), thresholds?.critical || 100);
 
     // Create threshold markLines and background visualMap
@@ -207,7 +223,8 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
         trigger: 'axis',
         formatter: (params: { name: string; value: number }[]) => {
           const point = params[0];
-          return `${point.name}<br/>Value: ${point.value} ${device.unit}`;
+          const formattedValue = point.value.toFixed(precision);
+          return `${point.name}<br/>${t('dashboard.reading')}: ${formattedValue} ${device.unit}`;
         },
       },
     };
@@ -232,7 +249,7 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device, reading }) => {
               transition: 'all 0.5s ease',
             }}
           >
-            {reading?.value ? reading.value.toFixed(1) : '-'}
+            {reading?.value ? reading.value.toFixed(precision) : '-'}
           </Title>
           <Text type="secondary">{device.unit}</Text>
         </div>

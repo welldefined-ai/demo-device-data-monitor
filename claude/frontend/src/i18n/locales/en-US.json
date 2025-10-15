@@ -16,7 +16,8 @@
     "noDevicesInGroup": "No devices in this group",
     "updated": "Updated",
     "currentValue": "Current Value",
-    "recentTrend": "Recent Trend"
+    "recentTrend": "Recent Trend",
+    "reading": "Reading"
   },
   "devices": {
     "title": "Devices",

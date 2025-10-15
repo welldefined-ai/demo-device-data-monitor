@@ -16,7 +16,8 @@
     "noDevicesInGroup": "该分组中无设备",
     "updated": "更新于",
     "currentValue": "当前值",
-    "recentTrend": "近期趋势"
+    "recentTrend": "近期趋势",
+    "reading": "读数"
   },
   "devices": {
     "title": "设备",
